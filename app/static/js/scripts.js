@@ -25,7 +25,7 @@ function populateSections(config) {
                 }
             });
 
-            // Dropdown para a seção [modules]
+            // Dropdown para módulos (somente para [modules])
             if (section.name === "modules") {
                 sectionDiv += `
                     <label for="modules-dropdown" class="form-label">Módulos</label>
@@ -39,21 +39,24 @@ function populateSections(config) {
                     </select>`;
             }
 
-            // Campos para outras seções
+            // Itens ativáveis/desativáveis (para outras seções)
             section.content.forEach(item => {
                 if (item.type === "item" && section.name !== "modules") {
                     sectionDiv += `
                         <div class="mb-3 d-flex align-items-center">
                             <input type="text" class="form-control me-2" value="${item.line}" data-section="${section.name}">
-                            <button type="button" class="btn btn-danger btn-sm" onclick="deleteItem(this)">Deletar</button>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" ${item.enabled ? "checked" : ""}>
+                                <label class="form-check-label">${item.enabled ? "Ativado" : "Desativado"}</label>
+                            </div>
                         </div>`;
                 }
             });
 
-            // Botão para adicionar interface em [pppoe] e [ipoe]
+            // Botões para [pppoe] e [ipoe]
             if (section.name === "pppoe" || section.name === "ipoe") {
                 sectionDiv += `
-                    <button type="button" class="btn btn-secondary" onclick="addInterface('${section.name}')">Adicionar Interface</button>`;
+                    <button type="button" class="btn btn-secondary me-2" onclick="addInterface('${section.name}')">Adicionar Interface</button>`;
             }
 
             sectionDiv += `</div></div>`;
@@ -100,10 +103,11 @@ function saveConfig() {
         // Processar itens regulares
         $(this).find(".form-control").each(function () {
             const lineContent = $(this).val();
+            const isEnabled = $(this).next(".form-check").find(".form-check-input").is(":checked");
             section.content.push({
                 type: "item",
                 line: lineContent,
-                enabled: true
+                enabled: isEnabled
             });
         });
 
