@@ -34,10 +34,9 @@ function populateSections(config) {
                     sectionDiv += `
                         <div class="mb-3 d-flex align-items-center">
                             <input type="text" class="form-control me-2" value="${item.line}" data-section="${section.name}">
-                            <div class="form-check me-2">
-                                <input class="form-check-input toggle-item" type="checkbox" ${item.enabled ? "checked" : ""} onchange="toggleItem(this)">
-                                <label class="form-check-label">${item.enabled ? "Ativado" : "Desativado"}</label>
-                            </div>
+                            <button type="button" class="btn toggle-item me-2" onclick="toggleItem(this)" data-enabled="${item.enabled}">
+                                <i class="bi ${item.enabled ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-danger'}"></i>
+                            </button>
                             ${
                                 item.line.startsWith("interface=")
                                     ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteItem(this)">Deletar</button>`
@@ -66,12 +65,16 @@ function toggleSection(section) {
 }
 
 // Função para alternar entre ativar e desativar um item
-function toggleItem(checkbox) {
-    const label = $(checkbox).next(".form-check-label");
-    if (checkbox.checked) {
-        label.text("Ativado");
+function toggleItem(button) {
+    const isEnabled = $(button).data("enabled");
+    const newState = !isEnabled;
+    $(button).data("enabled", newState);
+
+    const icon = $(button).find("i");
+    if (newState) {
+        icon.removeClass("bi-x-circle-fill text-danger").addClass("bi-check-circle-fill text-success");
     } else {
-        label.text("Desativado");
+        icon.removeClass("bi-check-circle-fill text-success").addClass("bi-x-circle-fill text-danger");
     }
 }
 
@@ -81,10 +84,9 @@ function addInterface(section) {
     sectionContent.append(`
         <div class="mb-3 d-flex align-items-center">
             <input type="text" class="form-control me-2" placeholder="Nova interface" value="interface=" data-section="${section}">
-            <div class="form-check me-2">
-                <input class="form-check-input toggle-item" type="checkbox" checked onchange="toggleItem(this)">
-                <label class="form-check-label">Ativado</label>
-            </div>
+            <button type="button" class="btn toggle-item me-2" onclick="toggleItem(this)" data-enabled="true">
+                <i class="bi bi-check-circle-fill text-success"></i>
+            </button>
             <button type="button" class="btn btn-danger btn-sm" onclick="deleteItem(this)">Deletar</button>
         </div>
     `);
@@ -105,7 +107,7 @@ function saveConfig() {
 
         $(this).find(".form-control").each(function () {
             const lineContent = $(this).val();
-            const isEnabled = $(this).next(".form-check").find(".form-check-input").is(":checked");
+            const isEnabled = $(this).next(".toggle-item").data("enabled");
             section.content.push({
                 type: "item",
                 line: lineContent,
