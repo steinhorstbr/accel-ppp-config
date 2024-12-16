@@ -17,11 +17,7 @@ function populateSections(config) {
                 <div class="card mb-3">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <strong>${section.name}</strong>
-                        ${
-                            section.name === "modules"
-                                ? `<button class="btn btn-sm btn-primary" onclick="toggleModules('${section.name}')">Esconder/Mostrar Módulos</button>`
-                                : ""
-                        }
+                        <button class="btn btn-sm btn-primary" onclick="toggleSection('${section.name}')">Esconder/Mostrar</button>
                     </div>
                     <div class="card-body" id="${section.name}-content">`;
 
@@ -39,11 +35,11 @@ function populateSections(config) {
                         <div class="mb-3 d-flex align-items-center">
                             <input type="text" class="form-control me-2" value="${item.line}" data-section="${section.name}">
                             <div class="form-check me-2">
-                                <input class="form-check-input" type="checkbox" ${item.enabled ? "checked" : ""}>
+                                <input class="form-check-input toggle-item" type="checkbox" ${item.enabled ? "checked" : ""} onchange="toggleItem(this)">
                                 <label class="form-check-label">${item.enabled ? "Ativado" : "Desativado"}</label>
                             </div>
                             ${
-                                section.name === "pppoe" || section.name === "ipoe"
+                                item.line.startsWith("interface=")
                                     ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteItem(this)">Deletar</button>`
                                     : ""
                             }
@@ -63,10 +59,20 @@ function populateSections(config) {
     });
 }
 
-// Função para esconder/mostrar os módulos
-function toggleModules(section) {
+// Função para esconder/mostrar itens de uma seção
+function toggleSection(section) {
     const sectionContent = $(`#${section}-content`);
     sectionContent.toggle();
+}
+
+// Função para alternar entre ativar e desativar um item
+function toggleItem(checkbox) {
+    const label = $(checkbox).next(".form-check-label");
+    if (checkbox.checked) {
+        label.text("Ativado");
+    } else {
+        label.text("Desativado");
+    }
 }
 
 // Função para adicionar uma nova interface
@@ -74,7 +80,11 @@ function addInterface(section) {
     const sectionContent = $(`#${section}-content`);
     sectionContent.append(`
         <div class="mb-3 d-flex align-items-center">
-            <input type="text" class="form-control me-2" placeholder="Nova interface" data-section="${section}">
+            <input type="text" class="form-control me-2" placeholder="Nova interface" value="interface=" data-section="${section}">
+            <div class="form-check me-2">
+                <input class="form-check-input toggle-item" type="checkbox" checked onchange="toggleItem(this)">
+                <label class="form-check-label">Ativado</label>
+            </div>
             <button type="button" class="btn btn-danger btn-sm" onclick="deleteItem(this)">Deletar</button>
         </div>
     `);
