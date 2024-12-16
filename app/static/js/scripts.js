@@ -19,7 +19,7 @@ function populateSections(config) {
                         <strong>${section.name}</strong>
                         <button class="btn btn-sm btn-primary" onclick="toggleSection('${section.name}')">Esconder/Mostrar</button>
                     </div>
-                    <div class="card-body" id="${section.name}-content">`;
+                    <div class="card-body" id="${section.name}-content" style="display: none;">`;
 
             // Notas (###)
             section.content.forEach(item => {
