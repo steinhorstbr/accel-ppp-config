@@ -15,7 +15,14 @@ function populateSections(config) {
         if (section.type === "section") {
             let sectionDiv = `
                 <div class="card mb-3">
-                    <div class="card-header"><strong>${section.name}</strong></div>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <strong>${section.name}</strong>
+                        ${
+                            section.name === "modules"
+                                ? `<button class="btn btn-sm btn-primary" onclick="toggleModules('${section.name}')">Esconder/Mostrar Módulos</button>`
+                                : ""
+                        }
+                    </div>
                     <div class="card-body" id="${section.name}-content">`;
 
             // Notas (###)
@@ -25,44 +32,41 @@ function populateSections(config) {
                 }
             });
 
-            // Dropdown para módulos (somente para [modules])
-            if (section.name === "modules") {
-                sectionDiv += `
-                    <label for="modules-dropdown" class="form-label">Módulos</label>
-                    <select multiple class="form-select mb-3" id="modules-dropdown">
-                        ${section.content
-                            .filter(item => item.type === "item")
-                            .map(item =>
-                                `<option value="${item.line}" ${item.enabled ? "selected" : ""}>${item.line}</option>`
-                            )
-                            .join("")}
-                    </select>`;
-            }
-
-            // Itens ativáveis/desativáveis (para outras seções)
+            // Itens ativáveis/desativáveis
             section.content.forEach(item => {
-                if (item.type === "item" && section.name !== "modules") {
+                if (item.type === "item") {
                     sectionDiv += `
                         <div class="mb-3 d-flex align-items-center">
                             <input type="text" class="form-control me-2" value="${item.line}" data-section="${section.name}">
-                            <div class="form-check">
+                            <div class="form-check me-2">
                                 <input class="form-check-input" type="checkbox" ${item.enabled ? "checked" : ""}>
                                 <label class="form-check-label">${item.enabled ? "Ativado" : "Desativado"}</label>
                             </div>
+                            ${
+                                section.name === "pppoe" || section.name === "ipoe"
+                                    ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteItem(this)">Deletar</button>`
+                                    : ""
+                            }
                         </div>`;
                 }
             });
 
-            // Botões para [pppoe] e [ipoe]
+            // Botão para adicionar interface em [pppoe] e [ipoe]
             if (section.name === "pppoe" || section.name === "ipoe") {
                 sectionDiv += `
-                    <button type="button" class="btn btn-secondary me-2" onclick="addInterface('${section.name}')">Adicionar Interface</button>`;
+                    <button type="button" class="btn btn-secondary" onclick="addInterface('${section.name}')">Adicionar Interface</button>`;
             }
 
             sectionDiv += `</div></div>`;
             sections.append(sectionDiv);
         }
     });
+}
+
+// Função para esconder/mostrar os módulos
+function toggleModules(section) {
+    const sectionContent = $(`#${section}-content`);
+    sectionContent.toggle();
 }
 
 // Função para adicionar uma nova interface
@@ -86,21 +90,9 @@ function saveConfig() {
     let config = [];
 
     $("#sections .card").each(function () {
-        const sectionName = $(this).find(".card-header").text();
+        const sectionName = $(this).find(".card-header strong").text();
         let section = { type: "section", name: sectionName, content: [] };
 
-        // Processar dropdown para [modules]
-        if (sectionName === "modules") {
-            $("#modules-dropdown option").each(function () {
-                section.content.push({
-                    type: "item",
-                    line: $(this).val(),
-                    enabled: $(this).is(":selected")
-                });
-            });
-        }
-
-        // Processar itens regulares
         $(this).find(".form-control").each(function () {
             const lineContent = $(this).val();
             const isEnabled = $(this).next(".form-check").find(".form-check-input").is(":checked");
@@ -111,7 +103,6 @@ function saveConfig() {
             });
         });
 
-        // Adicionar notas
         $(this).find(".alert-info").each(function () {
             section.content.push({
                 type: "note",
