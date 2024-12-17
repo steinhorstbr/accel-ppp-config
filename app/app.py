@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session, send_file
 from utils import parse_config, write_config, create_backup, validate_config
-from config import SECRET_KEY, CONFIG_PATH, USERS, BACKUP_DIR
+from config import SECRET_KEY, CONFIG_PATH, USERS
 import os
 
 app = Flask(__name__)
@@ -39,28 +39,10 @@ def save_config():
         return jsonify({"error": "Acesso não autorizado"}), 401
     config = request.json
     if validate_config(config):
-        create_backup(CONFIG_PATH)  # Cria um backup antes de salvar
-        write_config(config)
+        create_backup(CONFIG_PATH)  # Cria backup antes de salvar
+        write_config(config)         # Salva o arquivo de configuração
         return jsonify({"message": "Configuração salva com sucesso!"})
     return jsonify({"error": "Configuração inválida"}), 400
-
-# API para fazer upload de um novo arquivo de configuração
-@app.route('/api/upload', methods=['POST'])
-def upload_config():
-    if not session.get('logged_in'):
-        return jsonify({"error": "Acesso não autorizado"}), 401
-    if 'file' not in request.files:
-        return jsonify({"error": "Nenhum arquivo enviado"}), 400
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({"error": "Arquivo vazio"}), 400
-    if file:
-        filepath = os.path.join('/tmp', file.filename)
-        file.save(filepath)
-        # Substituindo o arquivo original
-        os.replace(filepath, CONFIG_PATH)
-        return jsonify({"message": "Arquivo carregado e substituído com sucesso!"})
-    return jsonify({"error": "Erro no upload do arquivo"}), 400
 
 # API para baixar o arquivo de configuração
 @app.route('/api/download', methods=['GET'])
@@ -68,6 +50,17 @@ def download_config():
     if not session.get('logged_in'):
         return jsonify({"error": "Acesso não autorizado"}), 401
     return send_file(CONFIG_PATH, as_attachment=True)
+
+# API para upload de um novo arquivo de configuração
+@app.route('/api/upload', methods=['POST'])
+def upload_config():
+    if not session.get('logged_in'):
+        return jsonify({"error": "Acesso não autorizado"}), 401
+    file = request.files.get('file')
+    if file and file.filename.endswith('.conf'):
+        file.save(CONFIG_PATH)
+        return jsonify({"message": "Arquivo de configuração carregado com sucesso!"})
+    return jsonify({"error": "Arquivo inválido. Somente arquivos .conf são aceitos."}), 400
 
 # API para logout
 @app.route('/logout', methods=['GET'])
