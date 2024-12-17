@@ -1,5 +1,6 @@
 import os
 import shutil
+import subprocess
 from config import CONFIG_PATH, BACKUP_DIR
 
 def parse_config():
@@ -50,3 +51,11 @@ def validate_config(config):
             if item['type'] == 'item' and '=' not in item['line']:
                 return False
     return True
+
+def run_command(command):
+    """Executa um comando no sistema e retorna a saída."""
+    try:
+        result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        return result.stdout.decode() + result.stderr.decode()
+    except subprocess.CalledProcessError as e:
+        return e.stderr.decode()
