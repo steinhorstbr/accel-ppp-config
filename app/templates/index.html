@@ -12,26 +12,19 @@
 <body>
     <div class="container mt-4">
         <h1 class="text-center mb-4">Editor de Configuração do Accel-PPP</h1>
-        
-        <!-- Botão de Logout -->
-        <div class="text-end mb-3">
-            <a href="/logout" class="btn btn-danger">
-                <i class="bi bi-box-arrow-right"></i> Logout
-            </a>
-        </div>
-
-        <!-- Botão de Baixar Configuração -->
         <div class="text-end mb-3">
             <a href="/api/download" class="btn btn-primary">
                 <i class="bi bi-download"></i> Baixar Configuração
             </a>
+            <button class="btn btn-info" onclick="logout()">
+                <i class="bi bi-box-arrow-right"></i> Logout
+            </button>
         </div>
 
-        <!-- Upload de Arquivo -->
-        <div class="mb-4">
-            <label for="fileUpload" class="form-label">Carregar novo arquivo de configuração</label>
-            <input class="form-control" type="file" id="fileUpload">
-            <button class="btn btn-warning mt-2" onclick="uploadConfig()">Carregar</button>
+        <!-- Upload de arquivo -->
+        <div class="mb-3">
+            <input type="file" id="fileUpload" class="form-control" />
+            <button class="btn btn-secondary mt-2" onclick="uploadFile()">Upload Novo Arquivo</button>
         </div>
 
         <div id="sections"></div>
@@ -39,6 +32,9 @@
         <div class="text-center mt-4">
             <button class="btn btn-success" onclick="saveConfig()">
                 <i class="bi bi-save"></i> Salvar Configurações
+            </button>
+            <button class="btn btn-warning" onclick="reloadConfig()">
+                <i class="bi bi-arrow-clockwise"></i> Recarregar
             </button>
         </div>
     </div>
