@@ -25,21 +25,16 @@ def parse_config():
 
 def write_config(config):
     """Salva as configurações no arquivo."""
-    try:
-        with open(CONFIG_PATH, 'w') as file:
-            for section in config:
-                file.write(f"[{section['name']}]\n")
-                for item in section['items']:
-                    if item['type'] == 'note':
-                        file.write(f"### {item['text']}\n")
-                    elif item['type'] == 'item':
-                        prefix = '' if item['enabled'] else '#'
-                        file.write(f"{prefix}{item['line']}\n")
-                file.write('\n')
-        print(f"Configuração salva com sucesso em {CONFIG_PATH}")
-    except Exception as e:
-        print(f"Erro ao salvar configuração: {e}")
-        raise
+    with open(CONFIG_PATH, 'w') as file:
+        for section in config:
+            file.write(f"[{section['name']}]\n")
+            for item in section['items']:
+                if item['type'] == 'note':
+                    file.write(f"### {item['text']}\n")
+                elif item['type'] == 'item':
+                    prefix = '' if item['enabled'] else '#'
+                    file.write(f"{prefix}{item['line']}\n")
+            file.write('\n')
 
 def create_backup(config_path):
     """Cria um backup antes de salvar as alterações."""
@@ -47,3 +42,11 @@ def create_backup(config_path):
         os.makedirs(BACKUP_DIR)
     backup_file = os.path.join(BACKUP_DIR, f"backup_{os.path.basename(config_path)}")
     shutil.copy(config_path, backup_file)
+
+def validate_config(config):
+    """Valida a estrutura das configurações."""
+    for section in config:
+        for item in section['items']:
+            if item['type'] == 'item' and '=' not in item['line']:
+                return False
+    return True
