@@ -1,8 +1,7 @@
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session, send_file
-import os
-import shutil
-from config import SECRET_KEY, CONFIG_PATH, USERS, BACKUP_DIR
 from utils import parse_config, write_config, create_backup, validate_config
+from config import SECRET_KEY, CONFIG_PATH, USERS, BACKUP_DIR
+import os
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
@@ -32,7 +31,7 @@ def get_config():
     if not session.get('logged_in'):
         return jsonify({"error": "Acesso não autorizado"}), 401
     try:
-        config = parse_config()
+        config = parse_config()  # Lê e retorna as configurações do arquivo
         return jsonify(config)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -42,11 +41,13 @@ def get_config():
 def save_config():
     if not session.get('logged_in'):
         return jsonify({"error": "Acesso não autorizado"}), 401
+    
     config = request.json
     try:
+        # Validar as configurações antes de salvar
         if validate_config(config):
             create_backup(CONFIG_PATH)  # Faz backup antes de salvar
-            write_config(config)  # Salva o arquivo
+            write_config(config)  # Chama a função de escrita para salvar as alterações no arquivo
             return jsonify({"message": "Configuração salva com sucesso!"})
         else:
             return jsonify({"error": "Configuração inválida"}), 400
