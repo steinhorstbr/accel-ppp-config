@@ -44,9 +44,9 @@ def save_config():
         return jsonify({"error": "Acesso não autorizado"}), 401
     config = request.json
     try:
-        if validate_config(config):
+        if validate_config(config):  # Valida se as configurações estão corretas
             create_backup(CONFIG_PATH)  # Faz backup antes de salvar
-            write_config(config)  # Salva o arquivo
+            write_config(config)  # Salva as configurações no arquivo
             return jsonify({"message": "Configuração salva com sucesso!"})
         else:
             return jsonify({"error": "Configuração inválida"}), 400
