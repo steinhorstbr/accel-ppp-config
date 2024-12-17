@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for, session
+from flask import Flask, request, jsonify, render_template, redirect, url_for, session, send_file
 from utils import parse_config, write_config, create_backup, validate_config
 from config import SECRET_KEY, CONFIG_PATH, USERS
 import os
@@ -43,6 +43,13 @@ def save_config():
         write_config(config)
         return jsonify({"message": "Configuração salva com sucesso!"})
     return jsonify({"error": "Configuração inválida"}), 400
+
+# API para baixar o arquivo
+@app.route('/api/download', methods=['GET'])
+def download_config():
+    if not session.get('logged_in'):
+        return jsonify({"error": "Acesso não autorizado"}), 401
+    return send_file(CONFIG_PATH, as_attachment=True)
 
 # API para logout
 @app.route('/logout', methods=['GET'])
