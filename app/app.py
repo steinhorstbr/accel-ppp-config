@@ -35,14 +35,20 @@ def get_config():
 # API para salvar configurações
 @app.route('/api/config', methods=['POST'])
 def save_config():
+    """Salva as configurações enviadas pelo frontend."""
     if not session.get('logged_in'):
         return jsonify({"error": "Acesso não autorizado"}), 401
-    config = request.json
-    if validate_config(config):
-        create_backup(CONFIG_PATH)
-        write_config(config)
-        return jsonify({"message": "Configuração salva com sucesso!"})
-    return jsonify({"error": "Configuração inválida"}), 400
+    try:
+        config = request.json
+        print("Configurações recebidas do frontend:", config)  # Log para depuração
+        if validate_config(config):
+            create_backup(CONFIG_PATH)
+            write_config(config)
+            return jsonify({"message": "Configuração salva com sucesso!"})
+        return jsonify({"error": "Configuração inválida"}), 400
+    except Exception as e:
+        print(f"Erro no salvamento: {e}")
+        return jsonify({"error": f"Erro ao salvar configurações: {str(e)}"}), 500
 
 # API para baixar o arquivo
 @app.route('/api/download', methods=['GET'])
