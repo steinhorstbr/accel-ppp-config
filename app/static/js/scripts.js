@@ -1,169 +1,133 @@
-// Carregar configurações do backend
-$(document).ready(function () {
-    fetch('/get-config')
-        .then(response => response.json())
-        .then(data => populateSections(data))
-        .catch(error => alert("Erro ao carregar configurações: " + error));
-});
+import subprocess
+from flask import Flask, request, jsonify, send_file, render_template, redirect, url_for, session
+import os
 
-// Função para preencher a página com as configurações
-function populateSections(config) {
-    let sections = $("#sections");
-    sections.empty();
+app = Flask(__name__)
+app.secret_key = 'supersecretkey'  # Altere para uma chave segura
+CONFIG_PATH = '/etc/accel-ppp.conf'
 
-    config.forEach(section => {
-        if (section.type === "section") {
-            let sectionDiv = `
-                <div class="card mb-3">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <strong>${section.name}</strong>
-                        <button class="btn btn-sm btn-primary" onclick="toggleSection('${section.name}')">Esconder/Mostrar</button>
-                    </div>
-                    <div class="card-body" id="${section.name}-content" style="display: none;">`;
+ADMIN_USER = 'admin'  # Usuário padrão
+ADMIN_PASS = 'admin'  # Senha padrão
 
-            // Notas (###)
-            section.content.forEach(item => {
-                if (item.type === "note") {
-                    sectionDiv += `<div class="alert alert-info">${item.text}</div>`;
-                }
-            });
 
-            // Itens ativáveis/desativáveis com ícones modernos
-            section.content.forEach(item => {
-                if (item.type === "item") {
-                    const iconClass = item.enabled ? "fas fa-check-circle text-success" : "fas fa-times-circle text-danger";
-                    sectionDiv += `
-                        <div class="mb-3 d-flex align-items-center">
-                            <input type="text" class="form-control me-2" value="${item.line}" data-section="${section.name}">
-                            <div class="form-check me-2">
-                                <input class="form-check-input toggle-item" type="checkbox" ${item.enabled ? "checked" : ""} onchange="toggleItem(this)">
-                                <label class="form-check-label">${item.enabled ? "Ativado" : "Desativado"}</label>
-                            </div>
-                            <button class="icon-button" onclick="toggleItem(this)">
-                                <i class="fa ${iconClass}"></i>
-                            </button>
-                            ${
-                                item.line.startsWith("interface=")
-                                    ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteItem(this)"><i class="fa fa-trash"></i></button>`
-                                    : ""
-                            }
-                        </div>`;
-                }
-            });
+def parse_config():
+    """Função para ler e processar o arquivo de configuração."""
+    config = []
+    current_section = None
+    with open(CONFIG_PATH, 'r') as file:
+        for line in file:
+            stripped = line.strip()
+            # Seção
+            if stripped.startswith('[') and stripped.endswith(']'):
+                if current_section:
+                    config.append(current_section)
+                current_section = {'type': 'section', 'name': stripped[1:-1], 'content': []}
+            # Notas (###)
+            elif stripped.startswith('###'):
+                if current_section:
+                    current_section['content'].append({'type': 'note', 'text': stripped[3:].strip()})
+            # Itens desativados (#)
+            elif stripped.startswith('#'):
+                if current_section:
+                    current_section['content'].append({'type': 'item', 'line': stripped[1:].strip(), 'enabled': False})
+            # Itens ativados
+            elif stripped:
+                if current_section:
+                    current_section['content'].append({'type': 'item', 'line': stripped, 'enabled': True})
+        
+        if current_section:
+            config.append(current_section)
+    return config
 
-            // Botão para adicionar interface em [pppoe] e [ipoe]
-            if (section.name === "pppoe" || section.name === "ipoe") {
-                sectionDiv += `
-                    <button type="button" class="btn btn-secondary" onclick="addInterface('${section.name}')">Adicionar Interface</button>`;
-            }
 
-            sectionDiv += `</div></div>`;
-            sections.append(sectionDiv);
-        }
-    });
-}
+def write_config(config):
+    """Função para salvar o arquivo de configuração."""
+    with open(CONFIG_PATH, 'w') as file:
+        for section in config:
+            file.write(f"[{section['name']}]\n")
+            for item in section['content']:
+                if item['type'] == 'note':
+                    file.write(f"### {item['text']}\n")
+                elif item['type'] == 'item':
+                    prefix = '' if item['enabled'] else '#'
+                    file.write(f"{prefix}{item['line']}\n")
 
-// Função para esconder/mostrar itens de uma seção
-function toggleSection(section) {
-    const sectionContent = $(`#${section}-content`);
-    sectionContent.toggle();
-}
 
-// Função para alternar entre ativar e desativar um item com ícones modernos
-function toggleItem(checkbox) {
-    const label = $(checkbox).next(".form-check-label");
-    const icon = $(checkbox).siblings(".icon-button").children("i");
+@app.route('/', methods=['GET', 'POST'])
+def login():
+    """Página de login."""
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        if username == ADMIN_USER and password == ADMIN_PASS:
+            session['logged_in'] = True
+            return redirect(url_for('index'))
+        else:
+            return render_template('login.html', error="Usuário ou senha incorretos.")
+    return render_template('login.html')
 
-    if (checkbox.checked) {
-        label.text("Ativado");
-        icon.removeClass("fa-times-circle text-danger").addClass("fa-check-circle text-success");
-    } else {
-        label.text("Desativado");
-        icon.removeClass("fa-check-circle text-success").addClass("fa-times-circle text-danger");
-    }
-}
 
-// Função para salvar as configurações
-function saveConfig() {
-    let config = [];
+@app.route('/config', methods=['GET'])
+def index():
+    """Página principal de configuração."""
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    return render_template('index.html')
 
-    $("#sections .card").each(function () {
-        const sectionName = $(this).find(".card-header strong").text();
-        let section = { type: "section", name: sectionName, content: [] };
 
-        $(this).find(".form-control").each(function () {
-            const lineContent = $(this).val();
-            const isEnabled = $(this).next(".form-check").find(".form-check-input").is(":checked");
-            section.content.push({
-                type: "item",
-                line: lineContent,
-                enabled: isEnabled
-            });
-        });
+@app.route('/get-config', methods=['GET'])
+def get_config():
+    """Endpoint para retornar a configuração atual."""
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    try:
+        return jsonify(parse_config())
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-        $(this).find(".alert-info").each(function () {
-            section.content.push({
-                type: "note",
-                text: $(this).text()
-            });
-        });
 
-        config.push(section);
-    });
+@app.route('/save-config', methods=['POST'])
+def save_config():
+    """Endpoint para salvar a configuração."""
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    try:
+        write_config(request.json)
+        return jsonify({"message": "Configuração salva com sucesso!"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    fetch('/save-config', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(config)
-    })
-        .then(response => response.json())
-        .then(data => {
-            alert(data.message || "Configuração salva com sucesso!");
-            setTimeout(function () {
-                location.reload();
-            }, 3000); // Atualiza a página após 3 segundos
-        })
-        .catch(error => alert("Erro ao salvar configurações: " + error));
-}
 
-// Função para fazer upload do arquivo de configurações
-function uploadConfig() {
-    const fileInput = $('#file-upload')[0];
-    const file = fileInput.files[0];
+@app.route('/download-config', methods=['GET'])
+def download_config():
+    """Endpoint para baixar o arquivo de configuração."""
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    try:
+        return send_file(CONFIG_PATH, as_attachment=True)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    if (file) {
-        const formData = new FormData();
-        formData.append('file', file);
 
-        fetch('/upload-config', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            alert(data.message || "Configuração carregada com sucesso!");
-            location.reload(); // Atualiza a página após o upload
-        })
-        .catch(error => alert("Erro ao fazer upload da configuração: " + error));
-    } else {
-        alert("Por favor, selecione um arquivo.");
-    }
-}
+@app.route('/reload', methods=['POST'])
+def reload_accel():
+    """Endpoint para executar o comando `accel-cmd reload`."""
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    try:
+        # Executando o comando accel-cmd reload
+        subprocess.run(['accel-cmd', 'reload'], check=True)
+        return jsonify({"message": "Accel-PPP recarregado com sucesso!"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-// Função para baixar o arquivo de configuração
-function downloadConfig() {
-    window.location.href = '/download-config';  // Redireciona para o endpoint de download
-}
 
-// Função para recarregar a configuração
-function reloadConfig() {
-    fetch('/reload-config')
-        .then(response => response.json())
-        .then(data => alert(data.message || "Configuração recarregada com sucesso!"))
-        .catch(error => alert("Erro ao recarregar a configuração: " + error));
-}
+@app.route('/logout', methods=['GET'])
+def logout():
+    """Encerrar a sessão."""
+    session.pop('logged_in', None)
+    return redirect(url_for('login'))
 
-// Função de logout
-function logout() {
-    window.location.href = '/logout';
-}
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=5000)
