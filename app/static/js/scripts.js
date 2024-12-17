@@ -5,6 +5,7 @@ $(document).ready(function () {
         .catch(error => alert("Erro ao carregar configurações: " + error));
 });
 
+// Função para mostrar as seções
 function populateSections(config) {
     let sections = $("#sections");
     sections.empty();
@@ -14,7 +15,9 @@ function populateSections(config) {
             <div class="card mb-3">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <strong>${section.name}</strong>
-                    <button class="btn btn-sm btn-primary" onclick="toggleSection('${section.name}')">Esconder/Mostrar</button>
+                    <button class="btn btn-sm btn-primary" onclick="toggleSection('${section.name}')">
+                        Esconder/Mostrar
+                    </button>
                 </div>
                 <div class="card-body" id="${section.name}-content" style="display: none;">`;
 
@@ -88,32 +91,38 @@ function saveConfig() {
     .then(response => response.json())
     .then(data => {
         Swal.fire("Sucesso!", data.message, "success");
-        setTimeout(function() {
-            location.reload();  // Atualiza a página após 3 segundos
-        }, 3000);
+        setTimeout(() => location.reload(), 3000);  // Recarregar após 3 segundos
     })
     .catch(error => Swal.fire("Erro!", "Falha ao salvar configurações", "error"));
 }
 
-function uploadConfig() {
-    const fileInput = document.getElementById('fileUpload');
-    const file = fileInput.files[0];
+function uploadFile() {
+    const file = $("#fileUpload")[0].files[0];
+    if (file) {
+        const formData = new FormData();
+        formData.append("file", file);
 
-    if (!file) {
-        alert("Por favor, selecione um arquivo para upload.");
-        return;
+        fetch('/api/upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => Swal.fire("Sucesso!", data.message, "success"))
+        .catch(error => Swal.fire("Erro!", "Falha ao carregar o arquivo", "error"));
+    } else {
+        Swal.fire("Erro!", "Selecione um arquivo para fazer upload", "error");
     }
+}
 
-    const formData = new FormData();
-    formData.append("file", file);
-
-    fetch('/api/upload', {
-        method: 'POST',
-        body: formData
+function reloadConfig() {
+    fetch('/api/reload', {
+        method: 'POST'
     })
     .then(response => response.json())
-    .then(data => {
-        Swal.fire("Sucesso!", data.message, "success");
-    })
-    .catch(error => Swal.fire("Erro!", "Falha ao carregar o arquivo.", "error"));
+    .then(data => Swal.fire("Sucesso!", data.message, "success"))
+    .catch(error => Swal.fire("Erro!", "Falha ao executar o comando", "error"));
+}
+
+function logout() {
+    window.location.href = "/logout";
 }
