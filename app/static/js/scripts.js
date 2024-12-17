@@ -5,7 +5,6 @@ $(document).ready(function () {
         .catch(error => alert("Erro ao carregar configurações: " + error));
 });
 
-// Função para renderizar as seções na página
 function populateSections(config) {
     let sections = $("#sections");
     sections.empty();
@@ -78,11 +77,6 @@ function saveConfig() {
             });
         });
 
-        section.items.push({
-            type: "note",
-            text: "Exemplo de nota"
-        });
-
         config.push(section);
     });
 
@@ -101,7 +95,6 @@ function saveConfig() {
     .catch(error => Swal.fire("Erro!", "Falha ao salvar configurações", "error"));
 }
 
-// Função para upload de arquivo
 function uploadConfig() {
     const fileInput = document.getElementById('fileUpload');
     const file = fileInput.files[0];
