@@ -1,5 +1,4 @@
 import os
-import shutil
 import subprocess
 from config import CONFIG_PATH, BACKUP_DIR
 
@@ -44,6 +43,14 @@ def create_backup(config_path):
     backup_file = os.path.join(BACKUP_DIR, f"backup_{os.path.basename(config_path)}")
     shutil.copy(config_path, backup_file)
 
+def execute_command(command):
+    """Executa um comando no shell e retorna o log."""
+    try:
+        result = subprocess.check_output(command, shell=True, stderr=subprocess.STDOUT)
+        return result.decode('utf-8')
+    except subprocess.CalledProcessError as e:
+        return e.output.decode('utf-8')
+
 def validate_config(config):
     """Valida a estrutura das configurações."""
     for section in config:
@@ -51,11 +58,3 @@ def validate_config(config):
             if item['type'] == 'item' and '=' not in item['line']:
                 return False
     return True
-
-def run_command(command):
-    """Executa um comando no sistema e retorna a saída."""
-    try:
-        result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        return result.stdout.decode() + result.stderr.decode()
-    except subprocess.CalledProcessError as e:
-        return e.stderr.decode()
