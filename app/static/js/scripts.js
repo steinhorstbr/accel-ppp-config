@@ -28,10 +28,10 @@ function populateSections(config) {
                 }
             });
 
-            // Itens ativáveis/desativáveis com ícones
+            // Itens ativáveis/desativáveis com ícones modernos
             section.content.forEach(item => {
                 if (item.type === "item") {
-                    const iconClass = item.enabled ? "bi-check-circle text-success" : "bi-x-circle text-danger";
+                    const iconClass = item.enabled ? "fas fa-check-circle text-success" : "fas fa-times-circle text-danger";
                     sectionDiv += `
                         <div class="mb-3 d-flex align-items-center">
                             <input type="text" class="form-control me-2" value="${item.line}" data-section="${section.name}">
@@ -40,11 +40,11 @@ function populateSections(config) {
                                 <label class="form-check-label">${item.enabled ? "Ativado" : "Desativado"}</label>
                             </div>
                             <button class="icon-button" onclick="toggleItem(this)">
-                                <i class="bi ${iconClass}"></i>
+                                <i class="fa ${iconClass}"></i>
                             </button>
                             ${
                                 item.line.startsWith("interface=")
-                                    ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteItem(this)"><i class="bi bi-trash"></i></button>`
+                                    ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteItem(this)"><i class="fa fa-trash"></i></button>`
                                     : ""
                             }
                         </div>`;
@@ -69,17 +69,17 @@ function toggleSection(section) {
     sectionContent.toggle();
 }
 
-// Função para alternar entre ativar e desativar um item
+// Função para alternar entre ativar e desativar um item com ícones modernos
 function toggleItem(checkbox) {
     const label = $(checkbox).next(".form-check-label");
     const icon = $(checkbox).siblings(".icon-button").children("i");
 
     if (checkbox.checked) {
         label.text("Ativado");
-        icon.removeClass("bi-x-circle text-danger").addClass("bi-check-circle text-success");
+        icon.removeClass("fa-times-circle text-danger").addClass("fa-check-circle text-success");
     } else {
         label.text("Desativado");
-        icon.removeClass("bi-check-circle text-success").addClass("bi-x-circle text-danger");
+        icon.removeClass("fa-check-circle text-success").addClass("fa-times-circle text-danger");
     }
 }
 
@@ -93,7 +93,7 @@ function addInterface(section) {
                 <input class="form-check-input toggle-item" type="checkbox" checked onchange="toggleItem(this)">
                 <label class="form-check-label">Ativado</label>
             </div>
-            <button type="button" class="btn btn-danger btn-sm" onclick="deleteItem(this)"><i class="bi bi-trash"></i></button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="deleteItem(this)"><i class="fa fa-trash"></i></button>
         </div>
     `);
 }
@@ -181,8 +181,8 @@ function toggleTheme() {
     const themeIcon = $('#theme-icon');
 
     if ($('body').hasClass('dark-theme')) {
-        themeIcon.removeClass('bi-sun').addClass('bi-moon');
+        themeIcon.removeClass('fa-sun').addClass('fa-moon');
     } else {
-        themeIcon.removeClass('bi-moon').addClass('bi-sun');
+        themeIcon.removeClass('fa-moon').addClass('fa-sun');
     }
 }
