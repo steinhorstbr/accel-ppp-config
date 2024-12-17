@@ -24,7 +24,7 @@ def parse_config():
     return config
 
 def write_config(config):
-    """Salva as configurações no arquivo."""
+    """Salva as configurações no arquivo /etc/accel-ppp.conf."""
     with open(CONFIG_PATH, 'w') as file:
         for section in config:
             file.write(f"[{section['name']}]\n")
