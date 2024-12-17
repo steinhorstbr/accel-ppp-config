@@ -5,6 +5,7 @@ $(document).ready(function () {
         .catch(error => alert("Erro ao carregar configurações: " + error));
 });
 
+// Função para renderizar as seções na página
 function populateSections(config) {
     let sections = $("#sections");
     sections.empty();
@@ -14,9 +15,7 @@ function populateSections(config) {
             <div class="card mb-3">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <strong>${section.name}</strong>
-                    <button class="btn btn-sm btn-primary" onclick="toggleSection('${section.name}')">
-                        Esconder/Mostrar
-                    </button>
+                    <button class="btn btn-sm btn-primary" onclick="toggleSection('${section.name}')">Esconder/Mostrar</button>
                 </div>
                 <div class="card-body" id="${section.name}-content" style="display: none;">`;
 
@@ -79,6 +78,11 @@ function saveConfig() {
             });
         });
 
+        section.items.push({
+            type: "note",
+            text: "Exemplo de nota"
+        });
+
         config.push(section);
     });
 
@@ -90,15 +94,25 @@ function saveConfig() {
     .then(response => response.json())
     .then(data => {
         Swal.fire("Sucesso!", data.message, "success");
-        location.reload();  // Atualiza a página após salvar
+        setTimeout(function() {
+            location.reload();  // Atualiza a página após 3 segundos
+        }, 3000);
     })
     .catch(error => Swal.fire("Erro!", "Falha ao salvar configurações", "error"));
 }
 
+// Função para upload de arquivo
 function uploadConfig() {
-    const fileInput = document.getElementById('uploadFile');
+    const fileInput = document.getElementById('fileUpload');
+    const file = fileInput.files[0];
+
+    if (!file) {
+        alert("Por favor, selecione um arquivo para upload.");
+        return;
+    }
+
     const formData = new FormData();
-    formData.append('file', fileInput.files[0]);
+    formData.append("file", file);
 
     fetch('/api/upload', {
         method: 'POST',
@@ -107,9 +121,6 @@ function uploadConfig() {
     .then(response => response.json())
     .then(data => {
         Swal.fire("Sucesso!", data.message, "success");
-        location.reload();  // Atualiza a página após o upload
     })
-    .catch(error => {
-        Swal.fire("Erro!", "Falha ao carregar o arquivo", "error");
-    });
+    .catch(error => Swal.fire("Erro!", "Falha ao carregar o arquivo.", "error"));
 }
