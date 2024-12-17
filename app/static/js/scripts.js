@@ -1,23 +1,10 @@
 $(document).ready(function () {
-    console.log("Carregando configurações...");
-    fetch('/api/config') // Chamando o endpoint para buscar os dados
-        .then(response => {
-            if (!response.ok) {
-                throw new Error("Erro ao buscar as configurações.");
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log("Configurações carregadas:", data);
-            populateSections(data);
-        })
-        .catch(error => {
-            console.error("Erro ao carregar configurações:", error);
-            alert("Erro ao carregar configurações. Verifique o console.");
-        });
+    fetch('/api/config')
+        .then(response => response.json())
+        .then(data => populateSections(data))
+        .catch(error => alert("Erro ao carregar configurações: " + error));
 });
 
-// Função para renderizar as seções na página
 function populateSections(config) {
     let sections = $("#sections");
     sections.empty();
@@ -27,21 +14,26 @@ function populateSections(config) {
             <div class="card mb-3">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <strong>${section.name}</strong>
-                    <button class="btn btn-sm btn-primary" onclick="toggleSection('${section.name}')">Esconder/Mostrar</button>
+                    <button class="btn btn-sm btn-primary" onclick="toggleSection('${section.name}')">
+                        Esconder/Mostrar
+                    </button>
                 </div>
                 <div class="card-body" id="${section.name}-content" style="display: none;">`;
 
-        // Renderizar itens e notas
         section.items.forEach(item => {
             if (item.type === "note") {
                 sectionDiv += `<div class="alert alert-info">${item.text}</div>`;
             } else if (item.type === "item") {
                 sectionDiv += `
-                    <div class="mb-3 d-flex align-items-center">
+                    <div class="d-flex align-items-center mb-2">
                         <input type="text" class="form-control me-2" value="${item.line}">
-                        <button class="btn toggle-item me-2" onclick="toggleItem(this)" data-enabled="${item.enabled}">
-                            <i class="bi ${item.enabled ? 'bi-check-circle-fill text-success' : 'bi-x-circle-fill text-danger'}"></i>
+                        <button class="btn btn-sm ${item.enabled ? 'btn-success' : 'btn-danger'} me-2" onclick="toggleItem(this)">
+                            <i class="bi ${item.enabled ? 'bi-check-circle' : 'bi-x-circle'}"></i>
                         </button>
+                        ${item.line.startsWith("interface=") 
+                            ? `<button class="btn btn-sm btn-danger" onclick="deleteItem(this)">
+                                <i class="bi bi-trash"></i> Deletar
+                            </button>` : ""}
                     </div>`;
             }
         });
@@ -51,26 +43,56 @@ function populateSections(config) {
     });
 }
 
-// Função para esconder/mostrar uma seção
 function toggleSection(sectionName) {
     $(`#${sectionName}-content`).toggle();
 }
 
-// Função para ativar/desativar um item
 function toggleItem(button) {
-    const isEnabled = $(button).data("enabled");
-    const newState = !isEnabled;
-    $(button).data("enabled", newState);
-
     const icon = $(button).find("i");
-    if (newState) {
-        icon.removeClass("bi-x-circle-fill text-danger").addClass("bi-check-circle-fill text-success");
+    if ($(button).hasClass('btn-success')) {
+        $(button).removeClass('btn-success').addClass('btn-danger');
+        icon.removeClass('bi-check-circle').addClass('bi-x-circle');
     } else {
-        icon.removeClass("bi-check-circle-fill text-success").addClass("bi-x-circle-fill text-danger");
+        $(button).removeClass('btn-danger').addClass('btn-success');
+        icon.removeClass('bi-x-circle').addClass('bi-check-circle');
     }
 }
 
-// Função para salvar as configurações
+function deleteItem(button) {
+    $(button).closest(".d-flex").remove();
+}
+
 function saveConfig() {
-    alert("Funcionalidade de salvar ainda está em teste!");
+    let config = [];
+
+    $("#sections .card").each(function () {
+        const sectionName = $(this).find(".card-header strong").text();
+        let section = { name: sectionName, items: [] };
+
+        $(this).find(".form-control").each(function () {
+            const lineContent = $(this).val();
+            const enabled = $(this).next(".btn").hasClass("btn-success");
+            section.items.push({
+                type: "item",
+                line: lineContent,
+                enabled: enabled
+            });
+        });
+
+        section.items.push({
+            type: "note",
+            text: "Exemplo de nota"
+        });
+
+        config.push(section);
+    });
+
+    fetch('/api/config', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(config)
+    })
+    .then(response => response.json())
+    .then(data => Swal.fire("Sucesso!", data.message, "success"))
+    .catch(error => Swal.fire("Erro!", "Falha ao salvar configurações", "error"));
 }
