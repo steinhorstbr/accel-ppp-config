@@ -5,17 +5,14 @@ $(document).ready(function () {
         .then(data => populateSections(data))
         .catch(error => alert("Erro ao carregar configurações: " + error));
 
-    // Upload de arquivo
-    $('#upload-form').submit(function (e) {
-        e.preventDefault();
-        const formData = new FormData(this);
-        fetch('/upload-config', {
-            method: 'POST',
-            body: formData
-        })
-            .then(response => response.json())
-            .then(data => alert(data.message || data.error))
-            .catch(error => alert("Erro ao enviar arquivo: " + error));
+    // Alternar tema
+    $('#theme-toggle').click(function () {
+        toggleTheme();
+    });
+
+    // Upload do arquivo
+    $('#config-upload').change(function (event) {
+        uploadConfigFile(event);
     });
 });
 
@@ -25,63 +22,71 @@ function populateSections(config) {
     sections.empty();
 
     config.forEach(section => {
-        let sectionDiv = `
-            <div class="card mb-3">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <strong>${section.name}</strong>
-                    <button class="btn btn-sm btn-primary" onclick="toggleSection('${section.name}')">Esconder/Mostrar</button>
-                </div>
-                <div class="card-body" id="${section.name}-content" style="display: none;">`;
+        if (section.type === "section") {
+            let sectionDiv = `
+                <div class="card mb-3">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <strong>${section.name}</strong>
+                        <button class="btn btn-sm btn-primary" onclick="toggleSection('${section.name}')">Esconder/Mostrar</button>
+                    </div>
+                    <div class="card-body" id="${section.name}-content" style="display: none;">`;
 
-        // Notas (###)
-        section.content.forEach(item => {
-            if (item.type === "note") {
-                sectionDiv += `<div class="alert alert-info">${item.text}</div>`;
-            }
-        });
+            // Notas (###)
+            section.content.forEach(item => {
+                if (item.type === "note") {
+                    sectionDiv += `<div class="alert alert-info">${item.text}</div>`;
+                }
+            });
 
-        // Itens ativáveis/desativáveis
-        section.content.forEach(item => {
-            if (item.type === "item") {
-                const icon = item.enabled ? 
-                    '<i class="bi bi-check-circle text-success"></i>' : 
-                    '<i class="bi bi-x-circle text-danger"></i>';
+            // Itens ativáveis/desativáveis
+            section.content.forEach(item => {
+                if (item.type === "item") {
+                    sectionDiv += `
+                        <div class="mb-3 d-flex align-items-center">
+                            <input type="text" class="form-control me-2" value="${item.line}" data-section="${section.name}">
+                            <div class="form-check me-2">
+                                <input class="form-check-input toggle-item" type="checkbox" ${item.enabled ? "checked" : ""} onchange="toggleItem(this)">
+                                <label class="form-check-label">${item.enabled ? "Ativado" : "Desativado"}</label>
+                            </div>
+                            ${
+                                item.line.startsWith("interface=")
+                                    ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteItem(this)"><i class="fas fa-trash"></i></button>`
+                                    : ""
+                            }
+                        </div>`;
+                }
+            });
 
+            // Botão para adicionar interface em [pppoe] e [ipoe]
+            if (section.name === "pppoe" || section.name === "ipoe") {
                 sectionDiv += `
-                    <div class="mb-3 d-flex align-items-center">
-                        <input type="text" class="form-control me-2" value="${item.line}" data-section="${section.name}">
-                        <div class="form-check me-2">
-                            <input class="form-check-input toggle-item" type="checkbox" ${item.enabled ? "checked" : ""} onchange="toggleItem(this)">
-                            <label class="form-check-label">${item.enabled ? "Ativado" : "Desativado"} ${icon}</label>
-                        </div>
-                        ${
-                            item.line.startsWith("interface=")
-                                ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteItem(this)">🗑️</button>`
-                                : ""
-                        }
-                    </div>`;
+                    <button type="button" class="btn btn-secondary" onclick="addInterface('${section.name}')">Adicionar Interface</button>`;
             }
-        });
 
-        // Botão para adicionar interface em [pppoe] e [ipoe]
-        if (section.name === "pppoe" || section.name === "ipoe") {
-            sectionDiv += `
-                <button type="button" class="btn btn-secondary" onclick="addInterface('${section.name}')">Adicionar Interface</button>`;
+            sectionDiv += `</div></div>`;
+            sections.append(sectionDiv);
         }
-
-        sectionDiv += `</div></div>`;
-        sections.append(sectionDiv);
     });
+}
+
+// Função para esconder/mostrar itens de uma seção
+function toggleSection(section) {
+    const sectionContent = $(`#${section}-content`);
+    sectionContent.toggle();
 }
 
 // Função para alternar entre ativar e desativar um item
 function toggleItem(checkbox) {
     const label = $(checkbox).next(".form-check-label");
-    const icon = checkbox.checked ? 
-        '<i class="bi bi-check-circle text-success"></i>' : 
-        '<i class="bi bi-x-circle text-danger"></i>';
-    
-    label.html(`${checkbox.checked ? "Ativado" : "Desativado"} ${icon}`);
+    const icon = $(checkbox).parent().find("label").prev("i");
+
+    if (checkbox.checked) {
+        label.text("Ativado");
+        icon.removeClass("fa-times-circle text-danger").addClass("fa-check-circle text-success");
+    } else {
+        label.text("Desativado");
+        icon.removeClass("fa-check-circle text-success").addClass("fa-times-circle text-danger");
+    }
 }
 
 // Função para adicionar uma nova interface
@@ -92,9 +97,9 @@ function addInterface(section) {
             <input type="text" class="form-control me-2" placeholder="Nova interface" value="interface=" data-section="${section}">
             <div class="form-check me-2">
                 <input class="form-check-input toggle-item" type="checkbox" checked onchange="toggleItem(this)">
-                <label class="form-check-label">Ativado <i class="bi bi-check-circle text-success"></i></label>
+                <label class="form-check-label">Ativado</label>
             </div>
-            <button type="button" class="btn btn-danger btn-sm" onclick="deleteItem(this)">🗑️</button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="deleteItem(this)"><i class="fas fa-trash"></i></button>
         </div>
     `);
 }
@@ -140,25 +145,43 @@ function saveConfig() {
         .then(response => response.json())
         .then(data => {
             alert(data.message || "Configuração salva com sucesso!");
-            setTimeout(function() {
-                location.reload(); // Atualiza a página após 3 segundos
-            }, 3000);
+            setTimeout(() => location.reload(), 3000);  // Atualizar após 3 segundos
         })
         .catch(error => alert("Erro ao salvar configurações: " + error));
 }
 
-// Função para ativar/desativar o modo escuro
-function toggleDarkMode() {
-    document.body.classList.toggle('dark-mode');
-}
+// Função para fazer upload do arquivo de configuração
+function uploadConfigFile(event) {
+    const file = event.target.files[0];
+    if (!file) {
+        alert("Por favor, selecione um arquivo.");
+        return;
+    }
 
-// Função para executar o comando accel-cmd reload
-function reloadConfig() {
-    fetch('/reload-config')
+    const formData = new FormData();
+    formData.append('file', file);
+
+    fetch('/upload-config', {
+        method: 'POST',
+        body: formData
+    })
         .then(response => response.json())
         .then(data => {
-            alert(data.message || "Erro ao recarregar a configuração");
-            console.log(data);
+            alert(data.message || "Arquivo carregado com sucesso!");
+            location.reload();  // Atualiza a página após upload
         })
-        .catch(error => alert("Erro ao executar o comando reload: " + error));
+        .catch(error => alert("Erro ao carregar o arquivo: " + error));
+}
+
+// Função para executar o comando `accel-cmd reload` e exibir o log
+function reloadAccel() {
+    fetch('/reload-accel', {
+        method: 'POST'
+    })
+        .then(response => response.json())
+        .then(data => {
+            $('#log-output').text(data.log);  // Exibe o log
+            $('#reload-log').show();  // Mostra o log
+        })
+        .catch(error => alert("Erro ao recarregar configuração: " + error));
 }
