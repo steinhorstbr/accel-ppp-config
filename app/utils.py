@@ -3,7 +3,7 @@ import shutil
 from config import CONFIG_PATH, BACKUP_DIR
 
 def parse_config():
-    """Lê o arquivo accel-ppp.conf e organiza as configurações."""
+    """Lê o arquivo accel-ppp.conf e organiza as configurações em formato JSON."""
     config = []
     current_section = None
     with open(CONFIG_PATH, 'r') as file:
@@ -37,7 +37,7 @@ def write_config(config):
             file.write('\n')
 
 def create_backup(config_path):
-    """Cria um backup antes de salvar as alterações."""
+    """Cria um backup do arquivo de configuração antes de salvar as mudanças."""
     if not os.path.exists(BACKUP_DIR):
         os.makedirs(BACKUP_DIR)
     backup_file = os.path.join(BACKUP_DIR, f"backup_{os.path.basename(config_path)}")
