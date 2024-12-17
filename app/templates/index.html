@@ -12,18 +12,25 @@
 <body>
     <div class="container mt-4">
         <h1 class="text-center mb-4">Editor de Configuração do Accel-PPP</h1>
+
+        <!-- Botão de download -->
         <div class="text-end mb-3">
             <a href="/api/download" class="btn btn-primary">
                 <i class="bi bi-download"></i> Baixar Configuração
             </a>
         </div>
+
+        <!-- Exibição das seções -->
         <div id="sections"></div>
+
+        <!-- Botão para salvar -->
         <div class="text-center mt-4">
             <button class="btn btn-success" onclick="saveConfig()">
                 <i class="bi bi-save"></i> Salvar Configurações
             </button>
         </div>
     </div>
+
     <script src="/static/js/scripts.js"></script>
 </body>
 </html>
