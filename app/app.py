@@ -37,10 +37,11 @@ def get_config():
 def save_config():
     if not session.get('logged_in'):
         return jsonify({"error": "Acesso não autorizado"}), 401
+    
     config = request.json
-    if validate_config(config):
+    if validate_config(config):  # Valida as configurações recebidas
         create_backup(CONFIG_PATH)  # Cria backup antes de salvar
-        write_config(config)         # Salva o arquivo de configuração
+        write_config(config)         # Salva as configurações no arquivo
         return jsonify({"message": "Configuração salva com sucesso!"})
     return jsonify({"error": "Configuração inválida"}), 400
 
@@ -58,7 +59,7 @@ def upload_config():
         return jsonify({"error": "Acesso não autorizado"}), 401
     file = request.files.get('file')
     if file and file.filename.endswith('.conf'):
-        file.save(CONFIG_PATH)
+        file.save(CONFIG_PATH)  # Substitui o arquivo de configuração
         return jsonify({"message": "Arquivo de configuração carregado com sucesso!"})
     return jsonify({"error": "Arquivo inválido. Somente arquivos .conf são aceitos."}), 400
 
