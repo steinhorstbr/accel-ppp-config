@@ -65,12 +65,11 @@ function deleteItem(button) {
 function saveConfig() {
     let config = [];
 
-    // Iterar sobre cada seção e coletar os dados
+    // Coleta de dados
     $("#sections .card").each(function () {
         const sectionName = $(this).find(".card-header strong").text();
         let section = { name: sectionName, items: [] };
 
-        // Coletar notas e itens
         $(this).find(".d-flex").each(function () {
             const input = $(this).find(".form-control");
             const lineContent = input.val();
@@ -86,9 +85,7 @@ function saveConfig() {
         config.push(section);
     });
 
-    console.log("Configurações enviadas ao backend:", config);  // Log para depuração
-
-    // Enviar para o backend
+    // Envia ao backend
     fetch('/api/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
