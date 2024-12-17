@@ -1,81 +1,137 @@
-from flask import Flask, request, jsonify, render_template, redirect, url_for, session, send_file
-from utils import parse_config, write_config, create_backup, validate_config, execute_command
-from config import SECRET_KEY, CONFIG_PATH, USERS, BACKUP_DIR
+import subprocess
+from flask import Flask, request, jsonify, render_template, redirect, url_for, session
 import os
 
 app = Flask(__name__)
-app.secret_key = SECRET_KEY
+app.secret_key = 'supersecretkey'
+CONFIG_PATH = '/etc/accel-ppp.conf'
 
-# Página de login
+ADMIN_USER = 'admin'
+ADMIN_PASS = 'admin'
+
+
+def parse_config():
+    """Função para ler e processar o arquivo de configuração."""
+    config = []
+    current_section = None
+    with open(CONFIG_PATH, 'r') as file:
+        for line in file:
+            stripped = line.strip()
+            # Seção
+            if stripped.startswith('[') and stripped.endswith(']'):
+                if current_section:
+                    config.append(current_section)
+                current_section = {'type': 'section', 'name': stripped[1:-1], 'content': []}
+            # Notas (###)
+            elif stripped.startswith('###'):
+                if current_section:
+                    current_section['content'].append({'type': 'note', 'text': stripped[3:].strip()})
+            # Itens desativados (#)
+            elif stripped.startswith('#'):
+                if current_section:
+                    current_section['content'].append({'type': 'item', 'line': stripped[1:].strip(), 'enabled': False})
+            # Itens ativados
+            elif stripped:
+                if current_section:
+                    current_section['content'].append({'type': 'item', 'line': stripped, 'enabled': True})
+        
+        if current_section:
+            config.append(current_section)
+    return config
+
+
+def write_config(config):
+    """Função para salvar o arquivo de configuração."""
+    with open(CONFIG_PATH, 'w') as file:
+        for section in config:
+            file.write(f"[{section['name']}]\n")
+            for item in section['content']:
+                if item['type'] == 'note':
+                    file.write(f"### {item['text']}\n")
+                elif item['type'] == 'item':
+                    prefix = '' if item['enabled'] else '#'
+                    file.write(f"{prefix}{item['line']}\n")
+            file.write('\n')
+
+
 @app.route('/', methods=['GET', 'POST'])
 def login():
+    """Página de login."""
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        if username in USERS and USERS[username] == password:
+        if username == ADMIN_USER and password == ADMIN_PASS:
             session['logged_in'] = True
             return redirect(url_for('index'))
-        return render_template('login.html', error="Usuário ou senha incorretos.")
+        else:
+            return render_template('login.html', error="Usuário ou senha incorretos.")
     return render_template('login.html')
 
-# Página principal
+
 @app.route('/config', methods=['GET'])
 def index():
+    """Página principal de configuração."""
     if not session.get('logged_in'):
         return redirect(url_for('login'))
     return render_template('index.html')
 
-# API para carregar configurações
-@app.route('/api/config', methods=['GET'])
+
+@app.route('/get-config', methods=['GET'])
 def get_config():
+    """Endpoint para retornar a configuração atual."""
     if not session.get('logged_in'):
-        return jsonify({"error": "Acesso não autorizado"}), 401
-    return jsonify(parse_config())
+        return redirect(url_for('login'))
+    try:
+        return jsonify(parse_config())
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-# API para salvar configurações
-@app.route('/api/config', methods=['POST'])
+
+@app.route('/save-config', methods=['POST'])
 def save_config():
+    """Endpoint para salvar a configuração."""
     if not session.get('logged_in'):
-        return jsonify({"error": "Acesso não autorizado"}), 401
-    config = request.json
-    if validate_config(config):
-        create_backup(CONFIG_PATH)
-        write_config(config)
+        return redirect(url_for('login'))
+    try:
+        write_config(request.json)
         return jsonify({"message": "Configuração salva com sucesso!"})
-    return jsonify({"error": "Configuração inválida"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-# API para fazer upload do arquivo
-@app.route('/api/upload', methods=['POST'])
-def upload_file():
+
+@app.route('/upload-config', methods=['POST'])
+def upload_config():
+    """Endpoint para upload do arquivo de configuração."""
     if not session.get('logged_in'):
-        return jsonify({"error": "Acesso não autorizado"}), 401
+        return redirect(url_for('login'))
+    try:
+        file = request.files['file']
+        if file and file.filename.endswith('.conf'):
+            file.save(CONFIG_PATH)
+            return jsonify({"message": "Arquivo carregado e configurado com sucesso!"})
+        return jsonify({"error": "Formato de arquivo inválido!"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-    file = request.files['file']
-    if file:
-        file.save(CONFIG_PATH)
-        return jsonify({"message": "Arquivo de configuração carregado com sucesso!"})
-    return jsonify({"error": "Erro ao carregar o arquivo."}), 400
 
-# API para baixar o arquivo de configuração
-@app.route('/api/download', methods=['GET'])
-def download_config():
+@app.route('/reload-config', methods=['GET'])
+def reload_config():
+    """Endpoint para rodar o comando accel-cmd reload e retornar o log."""
     if not session.get('logged_in'):
-        return jsonify({"error": "Acesso não autorizado"}), 401
-    return send_file(CONFIG_PATH, as_attachment=True)
+        return redirect(url_for('login'))
+    try:
+        result = subprocess.run(["accel-cmd", "reload"], capture_output=True, text=True)
+        return jsonify({"message": result.stdout, "error": result.stderr})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-# API para executar o comando "accel-cmd reload" e mostrar o log
-@app.route('/api/reload', methods=['POST'])
-def reload_accelppp():
-    if not session.get('logged_in'):
-        return jsonify({"error": "Acesso não autorizado"}), 401
-    result = execute_command("accel-cmd reload")
-    return jsonify({"message": "Comando executo com sucesso!", "log": result})
 
-# API para logout
 @app.route('/logout', methods=['GET'])
 def logout():
+    """Encerrar a sessão."""
     session.pop('logged_in', None)
     return redirect(url_for('login'))
 
+
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    app.run(host='0.0.0.0', port=5000)
