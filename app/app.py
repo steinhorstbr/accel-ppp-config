@@ -2,6 +2,10 @@ from flask import Flask, request, jsonify, render_template, redirect, url_for, s
 from utils import parse_config, write_config, create_backup, validate_config
 from config import SECRET_KEY, CONFIG_PATH, USERS
 import os
+import logging
+
+# Configuração de logging para depuração
+logging.basicConfig(level=logging.DEBUG)
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
@@ -37,18 +41,18 @@ def get_config():
 def save_config():
     if not session.get('logged_in'):
         return jsonify({"error": "Acesso não autorizado"}), 401
-    try:
-        config = request.json
-        print("Configurações recebidas:", config)  # Log para depuração
 
-        if validate_config(config):
-            create_backup(CONFIG_PATH)  # Criar backup antes de salvar
-            write_config(config)  # Salvar as configurações
-            return jsonify({"message": "Configuração salva com sucesso!"})
+    config = request.json
+    logging.debug(f"Configuração recebida: {config}")  # Log para depuração
+
+    if validate_config(config):
+        create_backup(CONFIG_PATH)  # Cria um backup antes de salvar
+        write_config(config)  # Salva as configurações no arquivo
+        logging.debug("Configuração salva com sucesso.")  # Log de sucesso
+        return jsonify({"message": "Configuração salva com sucesso!"})
+    else:
+        logging.error("Configuração inválida.")  # Log de erro
         return jsonify({"error": "Configuração inválida"}), 400
-    except Exception as e:
-        print(f"Erro no backend ao salvar: {e}")
-        return jsonify({"error": f"Erro ao salvar configurações: {str(e)}"}), 500
 
 # API para baixar o arquivo
 @app.route('/api/download', methods=['GET'])
