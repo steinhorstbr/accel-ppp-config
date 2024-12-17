@@ -13,15 +13,25 @@
     <div class="container mt-4">
         <h1 class="text-center mb-4">Editor de Configuração do Accel-PPP</h1>
         
-        <!-- Upload e Download de Arquivo -->
+        <!-- Botão de Logout -->
+        <div class="text-end mb-3">
+            <a href="/logout" class="btn btn-danger">
+                <i class="bi bi-box-arrow-right"></i> Logout
+            </a>
+        </div>
+
+        <!-- Botão de Baixar Configuração -->
         <div class="text-end mb-3">
             <a href="/api/download" class="btn btn-primary">
                 <i class="bi bi-download"></i> Baixar Configuração
             </a>
-            <input type="file" id="uploadFile" class="form-control w-auto d-inline-block" />
-            <button class="btn btn-warning" onclick="uploadConfig()">
-                <i class="bi bi-upload"></i> Carregar Novo Arquivo
-            </button>
+        </div>
+
+        <!-- Upload de Arquivo -->
+        <div class="mb-4">
+            <label for="fileUpload" class="form-label">Carregar novo arquivo de configuração</label>
+            <input class="form-control" type="file" id="fileUpload">
+            <button class="btn btn-warning mt-2" onclick="uploadConfig()">Carregar</button>
         </div>
 
         <div id="sections"></div>
