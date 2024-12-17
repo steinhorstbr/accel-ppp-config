@@ -1,7 +1,7 @@
+from flask import Flask, request, jsonify, render_template, redirect, url_for, session, send_file
+from utils import parse_config, write_config, create_backup, validate_config, execute_command
+from config import SECRET_KEY, CONFIG_PATH, USERS, BACKUP_DIR
 import os
-from flask import Flask, request, jsonify, render_template, redirect, url_for, send_file, session
-from utils import parse_config, write_config, create_backup, validate_config, run_command
-from config import SECRET_KEY, CONFIG_PATH, USERS
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
@@ -44,31 +44,32 @@ def save_config():
         return jsonify({"message": "Configuração salva com sucesso!"})
     return jsonify({"error": "Configuração inválida"}), 400
 
-# API para upload do arquivo de configurações
+# API para fazer upload do arquivo
 @app.route('/api/upload', methods=['POST'])
 def upload_file():
     if not session.get('logged_in'):
         return jsonify({"error": "Acesso não autorizado"}), 401
-    file = request.files['file']
-    if file and file.filename.endswith('.conf'):
-        file.save(CONFIG_PATH)
-        return jsonify({"message": "Arquivo carregado com sucesso!"})
-    return jsonify({"error": "Arquivo inválido ou não suportado."}), 400
 
-# API para baixar o arquivo
+    file = request.files['file']
+    if file:
+        file.save(CONFIG_PATH)
+        return jsonify({"message": "Arquivo de configuração carregado com sucesso!"})
+    return jsonify({"error": "Erro ao carregar o arquivo."}), 400
+
+# API para baixar o arquivo de configuração
 @app.route('/api/download', methods=['GET'])
 def download_config():
     if not session.get('logged_in'):
         return jsonify({"error": "Acesso não autorizado"}), 401
     return send_file(CONFIG_PATH, as_attachment=True)
 
-# API para executar o comando "accel-cmd reload"
+# API para executar o comando "accel-cmd reload" e mostrar o log
 @app.route('/api/reload', methods=['POST'])
-def reload_config():
+def reload_accelppp():
     if not session.get('logged_in'):
         return jsonify({"error": "Acesso não autorizado"}), 401
-    output = run_command('accel-cmd reload')
-    return jsonify({"message": "Comando reload executado com sucesso.", "output": output})
+    result = execute_command("accel-cmd reload")
+    return jsonify({"message": "Comando executo com sucesso!", "log": result})
 
 # API para logout
 @app.route('/logout', methods=['GET'])
