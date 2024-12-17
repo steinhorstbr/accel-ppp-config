@@ -4,16 +4,6 @@ $(document).ready(function () {
         .then(response => response.json())
         .then(data => populateSections(data))
         .catch(error => alert("Erro ao carregar configurações: " + error));
-
-    // Alternar tema
-    $('#theme-toggle').click(function () {
-        toggleTheme();
-    });
-
-    // Upload do arquivo
-    $('#config-upload').change(function (event) {
-        uploadConfigFile(event);
-    });
 });
 
 // Função para preencher a página com as configurações
@@ -38,9 +28,10 @@ function populateSections(config) {
                 }
             });
 
-            // Itens ativáveis/desativáveis
+            // Itens ativáveis/desativáveis com ícones
             section.content.forEach(item => {
                 if (item.type === "item") {
+                    const iconClass = item.enabled ? "bi-check-circle text-success" : "bi-x-circle text-danger";
                     sectionDiv += `
                         <div class="mb-3 d-flex align-items-center">
                             <input type="text" class="form-control me-2" value="${item.line}" data-section="${section.name}">
@@ -48,9 +39,12 @@ function populateSections(config) {
                                 <input class="form-check-input toggle-item" type="checkbox" ${item.enabled ? "checked" : ""} onchange="toggleItem(this)">
                                 <label class="form-check-label">${item.enabled ? "Ativado" : "Desativado"}</label>
                             </div>
+                            <button class="icon-button" onclick="toggleItem(this)">
+                                <i class="bi ${iconClass}"></i>
+                            </button>
                             ${
                                 item.line.startsWith("interface=")
-                                    ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteItem(this)"><i class="fas fa-trash"></i></button>`
+                                    ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteItem(this)"><i class="bi bi-trash"></i></button>`
                                     : ""
                             }
                         </div>`;
@@ -78,14 +72,14 @@ function toggleSection(section) {
 // Função para alternar entre ativar e desativar um item
 function toggleItem(checkbox) {
     const label = $(checkbox).next(".form-check-label");
-    const icon = $(checkbox).parent().find("label").prev("i");
+    const icon = $(checkbox).siblings(".icon-button").children("i");
 
     if (checkbox.checked) {
         label.text("Ativado");
-        icon.removeClass("fa-times-circle text-danger").addClass("fa-check-circle text-success");
+        icon.removeClass("bi-x-circle text-danger").addClass("bi-check-circle text-success");
     } else {
         label.text("Desativado");
-        icon.removeClass("fa-check-circle text-success").addClass("fa-times-circle text-danger");
+        icon.removeClass("bi-check-circle text-success").addClass("bi-x-circle text-danger");
     }
 }
 
@@ -99,7 +93,7 @@ function addInterface(section) {
                 <input class="form-check-input toggle-item" type="checkbox" checked onchange="toggleItem(this)">
                 <label class="form-check-label">Ativado</label>
             </div>
-            <button type="button" class="btn btn-danger btn-sm" onclick="deleteItem(this)"><i class="fas fa-trash"></i></button>
+            <button type="button" class="btn btn-danger btn-sm" onclick="deleteItem(this)"><i class="bi bi-trash"></i></button>
         </div>
     `);
 }
@@ -145,43 +139,50 @@ function saveConfig() {
         .then(response => response.json())
         .then(data => {
             alert(data.message || "Configuração salva com sucesso!");
-            setTimeout(() => location.reload(), 3000);  // Atualizar após 3 segundos
+            setTimeout(function () {
+                location.reload();
+            }, 3000); // Atualiza a página após 3 segundos
         })
         .catch(error => alert("Erro ao salvar configurações: " + error));
 }
 
-// Função para fazer upload do arquivo de configuração
-function uploadConfigFile(event) {
-    const file = event.target.files[0];
-    if (!file) {
-        alert("Por favor, selecione um arquivo.");
-        return;
-    }
+// Função para fazer upload do arquivo de configurações
+function uploadConfig() {
+    const fileInput = $('#file-upload')[0];
+    const file = fileInput.files[0];
 
-    const formData = new FormData();
-    formData.append('file', file);
+    if (file) {
+        const formData = new FormData();
+        formData.append('file', file);
 
-    fetch('/upload-config', {
-        method: 'POST',
-        body: formData
-    })
+        fetch('/upload-config', {
+            method: 'POST',
+            body: formData
+        })
         .then(response => response.json())
         .then(data => {
-            alert(data.message || "Arquivo carregado com sucesso!");
-            location.reload();  // Atualiza a página após upload
+            alert(data.message || "Configuração carregada com sucesso!");
+            location.reload(); // Atualiza a página após o upload
         })
-        .catch(error => alert("Erro ao carregar o arquivo: " + error));
+        .catch(error => alert("Erro ao fazer upload da configuração: " + error));
+    } else {
+        alert("Por favor, selecione um arquivo.");
+    }
 }
 
-// Função para executar o comando `accel-cmd reload` e exibir o log
-function reloadAccel() {
-    fetch('/reload-accel', {
-        method: 'POST'
-    })
-        .then(response => response.json())
-        .then(data => {
-            $('#log-output').text(data.log);  // Exibe o log
-            $('#reload-log').show();  // Mostra o log
-        })
-        .catch(error => alert("Erro ao recarregar configuração: " + error));
+// Função de logout
+function logout() {
+    window.location.href = '/logout';
+}
+
+// Função de alternância de tema
+function toggleTheme() {
+    $('body').toggleClass('dark-theme');
+    const themeIcon = $('#theme-icon');
+
+    if ($('body').hasClass('dark-theme')) {
+        themeIcon.removeClass('bi-sun').addClass('bi-moon');
+    } else {
+        themeIcon.removeClass('bi-moon').addClass('bi-sun');
+    }
 }
