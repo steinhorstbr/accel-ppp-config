@@ -5,7 +5,6 @@ $(document).ready(function () {
         .catch(error => alert("Erro ao carregar configurações: " + error));
 });
 
-// Função para mostrar as seções
 function populateSections(config) {
     let sections = $("#sections");
     sections.empty();
@@ -91,38 +90,33 @@ function saveConfig() {
     .then(response => response.json())
     .then(data => {
         Swal.fire("Sucesso!", data.message, "success");
-        setTimeout(() => location.reload(), 3000);  // Recarregar após 3 segundos
+        setTimeout(() => window.location.reload(), 3000);  // Atualiza após 3 segundos
     })
     .catch(error => Swal.fire("Erro!", "Falha ao salvar configurações", "error"));
 }
 
-function uploadFile() {
-    const file = $("#fileUpload")[0].files[0];
-    if (file) {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        fetch('/api/upload', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => Swal.fire("Sucesso!", data.message, "success"))
-        .catch(error => Swal.fire("Erro!", "Falha ao carregar o arquivo", "error"));
-    } else {
-        Swal.fire("Erro!", "Selecione um arquivo para fazer upload", "error");
-    }
-}
-
-function reloadConfig() {
+function reloadAccelPPP() {
     fetch('/api/reload', {
         method: 'POST'
     })
     .then(response => response.json())
-    .then(data => Swal.fire("Sucesso!", data.message, "success"))
+    .then(data => {
+        Swal.fire("Comando Executado", data.message, "success");
+        console.log("Log:", data.log);
+    })
     .catch(error => Swal.fire("Erro!", "Falha ao executar o comando", "error"));
 }
 
-function logout() {
-    window.location.href = "/logout";
+function uploadFile() {
+    const fileInput = document.getElementById("file-upload");
+    const formData = new FormData();
+    formData.append("file", fileInput.files[0]);
+
+    fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => Swal.fire("Sucesso!", data.message, "success"))
+    .catch(error => Swal.fire("Erro!", "Falha ao carregar arquivo", "error"));
 }
