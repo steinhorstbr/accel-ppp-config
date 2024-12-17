@@ -65,34 +65,45 @@ function deleteItem(button) {
 function saveConfig() {
     let config = [];
 
+    // Iterar sobre cada seção e coletar os dados
     $("#sections .card").each(function () {
         const sectionName = $(this).find(".card-header strong").text();
         let section = { name: sectionName, items: [] };
 
-        $(this).find(".form-control").each(function () {
-            const lineContent = $(this).val();
-            const enabled = $(this).next(".btn").hasClass("btn-success");
-            section.items.push({
-                type: "item",
-                line: lineContent,
-                enabled: enabled
-            });
-        });
+        // Coletar notas e itens
+        $(this).find(".d-flex").each(function () {
+            const input = $(this).find(".form-control");
+            const lineContent = input.val();
+            const enabled = $(this).find(".btn").hasClass("btn-success");
 
-        section.items.push({
-            type: "note",
-            text: "Exemplo de nota"
+            if (lineContent.startsWith("###")) {
+                section.items.push({ type: "note", text: lineContent.substring(3).trim() });
+            } else {
+                section.items.push({ type: "item", line: lineContent, enabled: enabled });
+            }
         });
 
         config.push(section);
     });
 
+    console.log("Configurações enviadas ao backend:", config);  // Log para depuração
+
+    // Enviar para o backend
     fetch('/api/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
     })
-    .then(response => response.json())
-    .then(data => Swal.fire("Sucesso!", data.message, "success"))
-    .catch(error => Swal.fire("Erro!", "Falha ao salvar configurações", "error"));
+        .then(response => response.json())
+        .then(data => {
+            if (data.message) {
+                Swal.fire("Sucesso!", data.message, "success");
+            } else {
+                Swal.fire("Erro!", data.error, "error");
+            }
+        })
+        .catch(error => {
+            console.error("Erro ao salvar configurações:", error);
+            Swal.fire("Erro!", "Falha ao salvar configurações.", "error");
+        });
 }
