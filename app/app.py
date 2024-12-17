@@ -1,15 +1,15 @@
-import os
 import subprocess
-from flask import Flask, request, jsonify, send_file, render_template, redirect, url_for, session
+from flask import Flask, request, jsonify, send_file
 
 app = Flask(__name__)
-app.secret_key = 'supersecretkey'  # Altere para uma chave segura
+app.secret_key = 'supersecretkey'
 CONFIG_PATH = '/etc/accel-ppp.conf'
-BACKUP_PATH = '/tmp/accel-ppp.conf.bak'  # Local de backup para o arquivo
-ADMIN_USER = 'admin'  # Usuário padrão
-ADMIN_PASS = 'admin'  # Senha padrão
+LOG_PATH = '/var/log/accel-ppp/accel-ppp.log'
 
-# Função para ler e processar o arquivo de configuração
+ADMIN_USER = 'admin'
+ADMIN_PASS = 'admin'
+
+# Função para ler a configuração
 def parse_config():
     config = []
     current_section = None
@@ -33,12 +33,13 @@ def parse_config():
             elif stripped:
                 if current_section:
                     current_section['content'].append({'type': 'item', 'line': stripped, 'enabled': True})
-
+        
         if current_section:
             config.append(current_section)
     return config
 
-# Função para salvar o arquivo de configuração
+
+# Função para salvar a configuração
 def write_config(config):
     with open(CONFIG_PATH, 'w') as file:
         for section in config:
@@ -51,44 +52,19 @@ def write_config(config):
                     file.write(f"{prefix}{item['line']}\n")
             file.write('\n')
 
-@app.route('/', methods=['GET', 'POST'])
-def login():
-    """Página de login."""
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        if username == ADMIN_USER and password == ADMIN_PASS:
-            session['logged_in'] = True
-            return redirect(url_for('index'))
-        else:
-            return render_template('login.html', error="Usuário ou senha incorretos.")
-    return render_template('login.html')
 
-
-@app.route('/config', methods=['GET'])
-def index():
-    """Página principal de configuração."""
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-    return render_template('index.html')
-
-
+# Rota para obter a configuração atual
 @app.route('/get-config', methods=['GET'])
 def get_config():
-    """Endpoint para retornar a configuração atual."""
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
     try:
         return jsonify(parse_config())
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
+# Rota para salvar a configuração
 @app.route('/save-config', methods=['POST'])
 def save_config():
-    """Endpoint para salvar a configuração."""
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
     try:
         write_config(request.json)
         return jsonify({"message": "Configuração salva com sucesso!"})
@@ -96,35 +72,30 @@ def save_config():
         return jsonify({"error": str(e)}), 500
 
 
+# Rota para baixar o arquivo de configuração
 @app.route('/download-config', methods=['GET'])
 def download_config():
-    """Endpoint para baixar o arquivo de configuração."""
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
+    return send_file(CONFIG_PATH, as_attachment=True)
+
+
+# Rota para executar o comando 'accel-cmd reload' e retornar o log
+@app.route('/reload-config', methods=['POST'])
+def reload_config():
     try:
-        return send_file(CONFIG_PATH, as_attachment=True)
+        # Executar o comando accel-cmd reload
+        result = subprocess.run(['accel-cmd', 'reload'], capture_output=True, text=True)
+        
+        if result.returncode != 0:
+            return jsonify({"error": "Erro ao executar o comando."}), 500
+
+        # Retornar o log
+        with open(LOG_PATH, 'r') as log_file:
+            log_data = log_file.read()
+
+        return jsonify({"message": "Configuração recarregada com sucesso!", "log": log_data})
+
     except Exception as e:
         return jsonify({"error": str(e)}), 500
-
-
-@app.route('/reload-config', methods=['GET'])
-def reload_config():
-    """Endpoint para executar o comando 'accel-cmd reload'."""
-    if not session.get('logged_in'):
-        return redirect(url_for('login'))
-    try:
-        # Executar o comando de reload
-        subprocess.run(["accel-cmd", "reload"], check=True)
-        return jsonify({"message": "Configuração recarregada com sucesso!"})
-    except subprocess.CalledProcessError as e:
-        return jsonify({"error": f"Erro ao executar o comando: {e}"}), 500
-
-
-@app.route('/logout', methods=['GET'])
-def logout():
-    """Encerrar a sessão."""
-    session.pop('logged_in', None)
-    return redirect(url_for('login'))
 
 
 if __name__ == '__main__':
