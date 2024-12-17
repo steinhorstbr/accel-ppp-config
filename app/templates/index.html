@@ -16,29 +16,34 @@
             <a href="/api/download" class="btn btn-primary">
                 <i class="bi bi-download"></i> Baixar Configuração
             </a>
-            <button class="btn btn-info" onclick="logout()">
-                <i class="bi bi-box-arrow-right"></i> Logout
-            </button>
         </div>
-
-        <!-- Upload de arquivo -->
-        <div class="mb-3">
-            <input type="file" id="fileUpload" class="form-control" />
-            <button class="btn btn-secondary mt-2" onclick="uploadFile()">Upload Novo Arquivo</button>
-        </div>
-
         <div id="sections"></div>
+
+        <!-- Botão de logout -->
+        <div class="text-end">
+            <a href="/logout" class="btn btn-danger">
+                <i class="bi bi-box-arrow-right"></i> Logout
+            </a>
+        </div>
 
         <div class="text-center mt-4">
             <button class="btn btn-success" onclick="saveConfig()">
                 <i class="bi bi-save"></i> Salvar Configurações
             </button>
-            <button class="btn btn-warning" onclick="reloadConfig()">
-                <i class="bi bi-arrow-clockwise"></i> Recarregar
+            <button class="btn btn-info ms-2" onclick="reloadAccelPPP()">
+                <i class="bi bi-arrow-clockwise"></i> Recarregar Configuração
+            </button>
+        </div>
+
+        <!-- Formulário de upload -->
+        <div class="mt-4">
+            <h5>Fazer Upload de Novo Arquivo</h5>
+            <input type="file" id="file-upload" class="form-control" />
+            <button onclick="uploadFile()" class="btn btn-primary mt-2">
+                <i class="bi bi-upload"></i> Carregar Arquivo
             </button>
         </div>
     </div>
-
     <script src="/static/js/scripts.js"></script>
 </body>
 </html>
