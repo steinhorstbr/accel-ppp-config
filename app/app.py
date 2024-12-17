@@ -30,29 +30,37 @@ def index():
 def get_config():
     if not session.get('logged_in'):
         return jsonify({"error": "Acesso não autorizado"}), 401
-    try:
-        config = parse_config()  # Lê e retorna as configurações do arquivo
-        return jsonify(config)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return jsonify(parse_config())
 
 # API para salvar configurações
 @app.route('/api/config', methods=['POST'])
 def save_config():
     if not session.get('logged_in'):
         return jsonify({"error": "Acesso não autorizado"}), 401
-    
     config = request.json
-    try:
-        # Validar as configurações antes de salvar
-        if validate_config(config):
-            create_backup(CONFIG_PATH)  # Faz backup antes de salvar
-            write_config(config)  # Chama a função de escrita para salvar as alterações no arquivo
-            return jsonify({"message": "Configuração salva com sucesso!"})
-        else:
-            return jsonify({"error": "Configuração inválida"}), 400
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    if validate_config(config):
+        create_backup(CONFIG_PATH)  # Cria um backup antes de salvar
+        write_config(config)
+        return jsonify({"message": "Configuração salva com sucesso!"})
+    return jsonify({"error": "Configuração inválida"}), 400
+
+# API para fazer upload de um novo arquivo de configuração
+@app.route('/api/upload', methods=['POST'])
+def upload_config():
+    if not session.get('logged_in'):
+        return jsonify({"error": "Acesso não autorizado"}), 401
+    if 'file' not in request.files:
+        return jsonify({"error": "Nenhum arquivo enviado"}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "Arquivo vazio"}), 400
+    if file:
+        filepath = os.path.join('/tmp', file.filename)
+        file.save(filepath)
+        # Substituindo o arquivo original
+        os.replace(filepath, CONFIG_PATH)
+        return jsonify({"message": "Arquivo carregado e substituído com sucesso!"})
+    return jsonify({"error": "Erro no upload do arquivo"}), 400
 
 # API para baixar o arquivo de configuração
 @app.route('/api/download', methods=['GET'])
