@@ -14,7 +14,9 @@ function populateSections(config) {
             <div class="card mb-3">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <strong>${section.name}</strong>
-                    <button class="btn btn-sm btn-primary" onclick="toggleSection('${section.name}')">Esconder/Mostrar</button>
+                    <button class="btn btn-sm btn-primary" onclick="toggleSection('${section.name}')">
+                        Esconder/Mostrar
+                    </button>
                 </div>
                 <div class="card-body" id="${section.name}-content" style="display: none;">`;
 
@@ -86,6 +88,28 @@ function saveConfig() {
         body: JSON.stringify(config)
     })
     .then(response => response.json())
-    .then(data => Swal.fire("Sucesso!", data.message, "success"))
+    .then(data => {
+        Swal.fire("Sucesso!", data.message, "success");
+        location.reload();  // Atualiza a página após salvar
+    })
     .catch(error => Swal.fire("Erro!", "Falha ao salvar configurações", "error"));
+}
+
+function uploadConfig() {
+    const fileInput = document.getElementById('uploadFile');
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+
+    fetch('/api/upload', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        Swal.fire("Sucesso!", data.message, "success");
+        location.reload();  // Atualiza a página após o upload
+    })
+    .catch(error => {
+        Swal.fire("Erro!", "Falha ao carregar o arquivo", "error");
+    });
 }
