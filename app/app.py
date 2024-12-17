@@ -39,12 +39,15 @@ def save_config():
         return jsonify({"error": "Acesso não autorizado"}), 401
     try:
         config = request.json
+        print("Configurações recebidas:", config)  # Log para depuração
+
         if validate_config(config):
-            create_backup(CONFIG_PATH)
-            write_config(config)
+            create_backup(CONFIG_PATH)  # Criar backup antes de salvar
+            write_config(config)  # Salvar as configurações
             return jsonify({"message": "Configuração salva com sucesso!"})
         return jsonify({"error": "Configuração inválida"}), 400
     except Exception as e:
+        print(f"Erro no backend ao salvar: {e}")
         return jsonify({"error": f"Erro ao salvar configurações: {str(e)}"}), 500
 
 # API para baixar o arquivo
