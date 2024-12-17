@@ -83,26 +83,6 @@ function toggleItem(checkbox) {
     }
 }
 
-// Função para adicionar uma nova interface
-function addInterface(section) {
-    const sectionContent = $(`#${section}-content`);
-    sectionContent.append(`
-        <div class="mb-3 d-flex align-items-center">
-            <input type="text" class="form-control me-2" placeholder="Nova interface" value="interface=" data-section="${section}">
-            <div class="form-check me-2">
-                <input class="form-check-input toggle-item" type="checkbox" checked onchange="toggleItem(this)">
-                <label class="form-check-label">Ativado</label>
-            </div>
-            <button type="button" class="btn btn-danger btn-sm" onclick="deleteItem(this)"><i class="fa fa-trash"></i></button>
-        </div>
-    `);
-}
-
-// Função para deletar um item
-function deleteItem(button) {
-    $(button).closest(".mb-3").remove();
-}
-
 // Função para salvar as configurações
 function saveConfig() {
     let config = [];
@@ -170,19 +150,20 @@ function uploadConfig() {
     }
 }
 
+// Função para baixar o arquivo de configuração
+function downloadConfig() {
+    window.location.href = '/download-config';  // Redireciona para o endpoint de download
+}
+
+// Função para recarregar a configuração
+function reloadConfig() {
+    fetch('/reload-config')
+        .then(response => response.json())
+        .then(data => alert(data.message || "Configuração recarregada com sucesso!"))
+        .catch(error => alert("Erro ao recarregar a configuração: " + error));
+}
+
 // Função de logout
 function logout() {
     window.location.href = '/logout';
-}
-
-// Função de alternância de tema
-function toggleTheme() {
-    $('body').toggleClass('dark-theme');
-    const themeIcon = $('#theme-icon');
-
-    if ($('body').hasClass('dark-theme')) {
-        themeIcon.removeClass('fa-sun').addClass('fa-moon');
-    } else {
-        themeIcon.removeClass('fa-moon').addClass('fa-sun');
-    }
 }
