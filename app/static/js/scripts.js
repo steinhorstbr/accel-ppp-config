@@ -5,6 +5,7 @@ $(document).ready(function () {
         .catch(error => alert("Erro ao carregar configurações: " + error));
 });
 
+// Função para renderizar as seções na página
 function populateSections(config) {
     let sections = $("#sections");
     sections.empty();
