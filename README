@@ -1,5 +1,5 @@
 git clone https://github.com/steinhorstbr/accel-ppp-config.git
-
+cd accel-ppp-config
 docker build -t accel-ppp-editor .
 
 
