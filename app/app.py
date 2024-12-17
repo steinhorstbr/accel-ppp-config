@@ -1,17 +1,16 @@
-import subprocess
-from flask import Flask, request, jsonify, render_template, redirect, url_for, session
 import os
+import subprocess
+from flask import Flask, request, jsonify, send_file, render_template, redirect, url_for, session
 
 app = Flask(__name__)
-app.secret_key = 'supersecretkey'
+app.secret_key = 'supersecretkey'  # Altere para uma chave segura
 CONFIG_PATH = '/etc/accel-ppp.conf'
+BACKUP_PATH = '/tmp/accel-ppp.conf.bak'  # Local de backup para o arquivo
+ADMIN_USER = 'admin'  # Usuário padrão
+ADMIN_PASS = 'admin'  # Senha padrão
 
-ADMIN_USER = 'admin'
-ADMIN_PASS = 'admin'
-
-
+# Função para ler e processar o arquivo de configuração
 def parse_config():
-    """Função para ler e processar o arquivo de configuração."""
     config = []
     current_section = None
     with open(CONFIG_PATH, 'r') as file:
@@ -34,14 +33,13 @@ def parse_config():
             elif stripped:
                 if current_section:
                     current_section['content'].append({'type': 'item', 'line': stripped, 'enabled': True})
-        
+
         if current_section:
             config.append(current_section)
     return config
 
-
+# Função para salvar o arquivo de configuração
 def write_config(config):
-    """Função para salvar o arquivo de configuração."""
     with open(CONFIG_PATH, 'w') as file:
         for section in config:
             file.write(f"[{section['name']}]\n")
@@ -52,7 +50,6 @@ def write_config(config):
                     prefix = '' if item['enabled'] else '#'
                     file.write(f"{prefix}{item['line']}\n")
             file.write('\n')
-
 
 @app.route('/', methods=['GET', 'POST'])
 def login():
@@ -99,31 +96,28 @@ def save_config():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/upload-config', methods=['POST'])
-def upload_config():
-    """Endpoint para upload do arquivo de configuração."""
+@app.route('/download-config', methods=['GET'])
+def download_config():
+    """Endpoint para baixar o arquivo de configuração."""
     if not session.get('logged_in'):
         return redirect(url_for('login'))
     try:
-        file = request.files['file']
-        if file and file.filename.endswith('.conf'):
-            file.save(CONFIG_PATH)
-            return jsonify({"message": "Arquivo carregado e configurado com sucesso!"})
-        return jsonify({"error": "Formato de arquivo inválido!"}), 400
+        return send_file(CONFIG_PATH, as_attachment=True)
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
 
 @app.route('/reload-config', methods=['GET'])
 def reload_config():
-    """Endpoint para rodar o comando accel-cmd reload e retornar o log."""
+    """Endpoint para executar o comando 'accel-cmd reload'."""
     if not session.get('logged_in'):
         return redirect(url_for('login'))
     try:
-        result = subprocess.run(["accel-cmd", "reload"], capture_output=True, text=True)
-        return jsonify({"message": result.stdout, "error": result.stderr})
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        # Executar o comando de reload
+        subprocess.run(["accel-cmd", "reload"], check=True)
+        return jsonify({"message": "Configuração recarregada com sucesso!"})
+    except subprocess.CalledProcessError as e:
+        return jsonify({"error": f"Erro ao executar o comando: {e}"}), 500
 
 
 @app.route('/logout', methods=['GET'])
