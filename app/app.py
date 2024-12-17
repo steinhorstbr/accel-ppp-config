@@ -1,7 +1,8 @@
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session, send_file
-from utils import parse_config, write_config, create_backup, validate_config
-from config import SECRET_KEY, CONFIG_PATH, USERS
 import os
+import shutil
+from config import SECRET_KEY, CONFIG_PATH, USERS, BACKUP_DIR
+from utils import parse_config, write_config, create_backup, validate_config
 
 app = Flask(__name__)
 app.secret_key = SECRET_KEY
@@ -30,7 +31,11 @@ def index():
 def get_config():
     if not session.get('logged_in'):
         return jsonify({"error": "Acesso não autorizado"}), 401
-    return jsonify(parse_config())
+    try:
+        config = parse_config()
+        return jsonify(config)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # API para salvar configurações
 @app.route('/api/config', methods=['POST'])
@@ -38,13 +43,17 @@ def save_config():
     if not session.get('logged_in'):
         return jsonify({"error": "Acesso não autorizado"}), 401
     config = request.json
-    if validate_config(config):
-        create_backup(CONFIG_PATH)
-        write_config(config)
-        return jsonify({"message": "Configuração salva com sucesso!"})
-    return jsonify({"error": "Configuração inválida"}), 400
+    try:
+        if validate_config(config):
+            create_backup(CONFIG_PATH)  # Faz backup antes de salvar
+            write_config(config)  # Salva o arquivo
+            return jsonify({"message": "Configuração salva com sucesso!"})
+        else:
+            return jsonify({"error": "Configuração inválida"}), 400
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
-# API para baixar o arquivo
+# API para baixar o arquivo de configuração
 @app.route('/api/download', methods=['GET'])
 def download_config():
     if not session.get('logged_in'):
