@@ -12,18 +12,20 @@
 <body>
     <div class="container mt-4">
         <h1 class="text-center mb-4">Editor de Configuração do Accel-PPP</h1>
-
-        <!-- Botão de download -->
+        
+        <!-- Upload e Download de Arquivo -->
         <div class="text-end mb-3">
             <a href="/api/download" class="btn btn-primary">
                 <i class="bi bi-download"></i> Baixar Configuração
             </a>
+            <input type="file" id="uploadFile" class="form-control w-auto d-inline-block" />
+            <button class="btn btn-warning" onclick="uploadConfig()">
+                <i class="bi bi-upload"></i> Carregar Novo Arquivo
+            </button>
         </div>
 
-        <!-- Exibição das seções -->
         <div id="sections"></div>
 
-        <!-- Botão para salvar -->
         <div class="text-center mt-4">
             <button class="btn btn-success" onclick="saveConfig()">
                 <i class="bi bi-save"></i> Salvar Configurações
