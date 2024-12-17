@@ -36,7 +36,6 @@ def write_config(config):
                         prefix = '' if item['enabled'] else '#'
                         file.write(f"{prefix}{item['line']}\n")
                 file.write('\n')
-        print("Configurações salvas com sucesso.")
     except Exception as e:
         print(f"Erro ao salvar o arquivo: {e}")
         raise
