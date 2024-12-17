@@ -42,15 +42,17 @@ def get_config():
 def save_config():
     if not session.get('logged_in'):
         return jsonify({"error": "Acesso não autorizado"}), 401
-    config = request.json
+    config = request.json  # Pega o corpo da requisição JSON
+    print("Config recebida:", config)  # Log para depuração
     try:
-        if validate_config(config):  # Valida se as configurações estão corretas
-            create_backup(CONFIG_PATH)  # Faz backup antes de salvar
-            write_config(config)  # Salva as configurações no arquivo
+        if validate_config(config):  # Valida as configurações
+            create_backup(CONFIG_PATH)  # Faz backup do arquivo antes de salvar
+            write_config(config)  # Função para salvar as configurações no arquivo
             return jsonify({"message": "Configuração salva com sucesso!"})
         else:
             return jsonify({"error": "Configuração inválida"}), 400
     except Exception as e:
+        print(f"Erro ao salvar configuração: {e}")  # Log para depuração
         return jsonify({"error": str(e)}), 500
 
 # API para baixar o arquivo de configuração
