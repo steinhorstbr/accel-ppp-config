@@ -38,14 +38,16 @@ def save_config():
     if not session.get('logged_in'):
         return jsonify({"error": "Acesso não autorizado"}), 401
 
+    # Receber as configurações do frontend
     config = request.json
-    
-    # Valida as configurações recebidas
+
+    # Validar as configurações antes de gravar
     if validate_config(config):
         create_backup(CONFIG_PATH)  # Cria backup antes de salvar
         write_config(config)         # Salva o arquivo de configuração
         return jsonify({"message": "Configuração salva com sucesso!"})
-    return jsonify({"error": "Configuração inválida"}), 400
+    else:
+        return jsonify({"error": "Configuração inválida"}), 400
 
 # API para baixar o arquivo de configuração
 @app.route('/api/download', methods=['GET'])
