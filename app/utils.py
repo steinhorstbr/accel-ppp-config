@@ -25,6 +25,10 @@ def parse_config():
 
 def write_config(config):
     """Salva as configurações no arquivo."""
+    # Garantir que estamos escrevendo no arquivo correto
+    if not os.path.exists(CONFIG_PATH):
+        raise Exception(f"Arquivo {CONFIG_PATH} não encontrado.")
+    
     with open(CONFIG_PATH, 'w') as file:
         for section in config:
             file.write(f"[{section['name']}]\n")
@@ -44,7 +48,7 @@ def create_backup(config_path):
     shutil.copy(config_path, backup_file)
 
 def validate_config(config):
-    """Valida a estrutura das configurações."""
+    """Valida a estrutura das configurações antes de salvar no arquivo."""
     for section in config:
         for item in section['items']:
             if item['type'] == 'item' and '=' not in item['line']:
