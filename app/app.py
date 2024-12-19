@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, render_template, redirect, url_for, session, send_file
-import subprocess
 import os
+import subprocess
 
 app = Flask(__name__)
 app.secret_key = 'supersecretkey'
@@ -91,9 +91,20 @@ def save_config():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/upload-config', methods=['POST'])
+def upload_config():
+    if not session.get('logged_in'):
+        return redirect(url_for('login'))
+    try:
+        file = request.files['file']
+        file.save(CONFIG_PATH)
+        return jsonify({"message": "Configuração carregada com sucesso!"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
 @app.route('/download-config', methods=['GET'])
 def download_config():
-    """Baixar o arquivo accel-ppp.conf."""
     if not session.get('logged_in'):
         return redirect(url_for('login'))
     try:
@@ -102,14 +113,13 @@ def download_config():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/reload-accel', methods=['POST'])
-def reload_accel():
-    """Executar o comando accel-cmd reload e retornar o log."""
+@app.route('/reload-config', methods=['POST'])
+def reload_config():
     if not session.get('logged_in'):
         return redirect(url_for('login'))
     try:
         result = subprocess.run(['accel-cmd', 'reload'], capture_output=True, text=True)
-        return jsonify({"log": result.stdout + result.stderr})
+        return jsonify({"message": "Comando executado com sucesso!", "log": result.stdout + result.stderr})
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
