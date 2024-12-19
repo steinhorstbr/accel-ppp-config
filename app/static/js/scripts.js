@@ -28,17 +28,13 @@ function populateSections(config) {
                 }
             });
 
-            // Itens ativáveis/desativáveis com ícones modernos
+            // Itens ativáveis/desativáveis
             section.content.forEach(item => {
                 if (item.type === "item") {
                     const iconClass = item.enabled ? "fas fa-check-circle text-success" : "fas fa-times-circle text-danger";
                     sectionDiv += `
                         <div class="mb-3 d-flex align-items-center">
                             <input type="text" class="form-control me-2" value="${item.line}" data-section="${section.name}">
-                            <div class="form-check me-2">
-                                <input class="form-check-input toggle-item" type="checkbox" ${item.enabled ? "checked" : ""} onchange="toggleItem(this)">
-                                <label class="form-check-label">${item.enabled ? "Ativado" : "Desativado"}</label>
-                            </div>
                             <button class="icon-button" onclick="toggleItem(this)">
                                 <i class="fa ${iconClass}"></i>
                             </button>
@@ -69,18 +65,12 @@ function toggleSection(section) {
     sectionContent.toggle();
 }
 
-// Função para alternar entre ativar e desativar um item com ícones modernos
-function toggleItem(checkbox) {
-    const label = $(checkbox).next(".form-check-label");
-    const icon = $(checkbox).siblings(".icon-button").children("i");
-
-    if (checkbox.checked) {
-        label.text("Ativado");
-        icon.removeClass("fa-times-circle text-danger").addClass("fa-check-circle text-success");
-    } else {
-        label.text("Desativado");
-        icon.removeClass("fa-check-circle text-success").addClass("fa-times-circle text-danger");
-    }
+// Função para alternar entre ativar e desativar um item
+function toggleItem(button) {
+    const icon = $(button).children("i");
+    const isActive = icon.hasClass('fa-check-circle');
+    icon.toggleClass('fa-check-circle text-success', !isActive);
+    icon.toggleClass('fa-times-circle text-danger', isActive);
 }
 
 // Função para adicionar uma nova interface
@@ -89,10 +79,6 @@ function addInterface(section) {
     sectionContent.append(`
         <div class="mb-3 d-flex align-items-center">
             <input type="text" class="form-control me-2" placeholder="Nova interface" value="interface=" data-section="${section}">
-            <div class="form-check me-2">
-                <input class="form-check-input toggle-item" type="checkbox" checked onchange="toggleItem(this)">
-                <label class="form-check-label">Ativado</label>
-            </div>
             <button type="button" class="btn btn-danger btn-sm" onclick="deleteItem(this)"><i class="fa fa-trash"></i></button>
         </div>
     `);
@@ -113,7 +99,7 @@ function saveConfig() {
 
         $(this).find(".form-control").each(function () {
             const lineContent = $(this).val();
-            const isEnabled = $(this).next(".form-check").find(".form-check-input").is(":checked");
+            const isEnabled = $(this).siblings(".icon-button").children("i").hasClass('fa-check-circle');
             section.content.push({
                 type: "item",
                 line: lineContent,
@@ -136,17 +122,44 @@ function saveConfig() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(config)
     })
-        .then(response => response.json())
-        .then(data => {
-            alert(data.message || "Configuração salva com sucesso!");
-            setTimeout(function () {
-                location.reload();
-            }, 3000); // Atualiza a página após 3 segundos
-        })
-        .catch(error => alert("Erro ao salvar configurações: " + error));
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message || "Configuração salva com sucesso!");
+        setTimeout(function () {
+            location.reload();
+        }, 3000); // Atualiza a página após 3 segundos
+    })
+    .catch(error => alert("Erro ao salvar configurações: " + error));
 }
 
-// Função para fazer upload do arquivo de configurações
+// Função para baixar o arquivo de configuração
+function downloadConfig() {
+    window.location.href = '/download-config';
+}
+
+// Função para executar o comando accel-cmd reload e mostrar o log
+function reloadAccel() {
+    fetch('/reload-accel', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.log) {
+            $('#log-container').show();
+            $('#log-output').text(data.log);
+        } else if (data.error) {
+            alert('Erro: ' + data.error);
+        }
+    })
+    .catch(error => alert("Erro ao recarregar Accel-PPP: " + error));
+}
+
+// Função de logout
+function logout() {
+    window.location.href = '/logout';
+}
+
+// Função de upload do arquivo de configuração
 function uploadConfig() {
     const fileInput = $('#file-upload')[0];
     const file = fileInput.files[0];
@@ -167,22 +180,5 @@ function uploadConfig() {
         .catch(error => alert("Erro ao fazer upload da configuração: " + error));
     } else {
         alert("Por favor, selecione um arquivo.");
-    }
-}
-
-// Função de logout
-function logout() {
-    window.location.href = '/logout';
-}
-
-// Função de alternância de tema
-function toggleTheme() {
-    $('body').toggleClass('dark-theme');
-    const themeIcon = $('#theme-icon');
-
-    if ($('body').hasClass('dark-theme')) {
-        themeIcon.removeClass('fa-sun').addClass('fa-moon');
-    } else {
-        themeIcon.removeClass('fa-moon').addClass('fa-sun');
     }
 }
