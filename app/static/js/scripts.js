@@ -1,4 +1,3 @@
-// Carregar configurações do backend
 $(document).ready(function () {
     fetch('/get-config')
         .then(response => response.json())
@@ -28,16 +27,15 @@ function populateSections(config) {
                 }
             });
 
-            // Itens ativáveis/desativáveis
+            // Itens ativáveis/desativáveis com Toggle Switch
             section.content.forEach(item => {
                 if (item.type === "item") {
-                    const iconClass = item.enabled ? "fas fa-check-circle text-success" : "fas fa-times-circle text-danger";
                     sectionDiv += `
                         <div class="mb-3 d-flex align-items-center">
                             <input type="text" class="form-control me-2" value="${item.line}" data-section="${section.name}">
-                            <button class="icon-button" onclick="toggleItem(this)">
-                                <i class="fa ${iconClass}"></i>
-                            </button>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input toggle-switch" type="checkbox" ${item.enabled ? "checked" : ""} onchange="toggleItem(this)">
+                            </div>
                             ${
                                 item.line.startsWith("interface=")
                                     ? `<button type="button" class="btn btn-danger btn-sm" onclick="deleteItem(this)"><i class="fa fa-trash"></i></button>`
@@ -66,11 +64,13 @@ function toggleSection(section) {
 }
 
 // Função para alternar entre ativar e desativar um item
-function toggleItem(button) {
-    const icon = $(button).children("i");
-    const isActive = icon.hasClass('fa-check-circle');
-    icon.toggleClass('fa-check-circle text-success', !isActive);
-    icon.toggleClass('fa-times-circle text-danger', isActive);
+function toggleItem(toggleSwitch) {
+    const label = $(toggleSwitch).next(".form-check-label");
+    if (toggleSwitch.checked) {
+        label.text("Ativado");
+    } else {
+        label.text("Desativado");
+    }
 }
 
 // Função para adicionar uma nova interface
@@ -79,6 +79,9 @@ function addInterface(section) {
     sectionContent.append(`
         <div class="mb-3 d-flex align-items-center">
             <input type="text" class="form-control me-2" placeholder="Nova interface" value="interface=" data-section="${section}">
+            <div class="form-check form-switch">
+                <input class="form-check-input toggle-switch" type="checkbox" checked onchange="toggleItem(this)">
+            </div>
             <button type="button" class="btn btn-danger btn-sm" onclick="deleteItem(this)"><i class="fa fa-trash"></i></button>
         </div>
     `);
@@ -99,7 +102,7 @@ function saveConfig() {
 
         $(this).find(".form-control").each(function () {
             const lineContent = $(this).val();
-            const isEnabled = $(this).siblings(".icon-button").children("i").hasClass('fa-check-circle');
+            const isEnabled = $(this).siblings('.form-check').find('.toggle-switch').is(':checked');
             section.content.push({
                 type: "item",
                 line: lineContent,
@@ -132,34 +135,7 @@ function saveConfig() {
     .catch(error => alert("Erro ao salvar configurações: " + error));
 }
 
-// Função para baixar o arquivo de configuração
-function downloadConfig() {
-    window.location.href = '/download-config';
-}
-
-// Função para executar o comando accel-cmd reload e mostrar o log
-function reloadAccel() {
-    fetch('/reload-accel', {
-        method: 'POST'
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.log) {
-            $('#log-container').show();
-            $('#log-output').text(data.log);
-        } else if (data.error) {
-            alert('Erro: ' + data.error);
-        }
-    })
-    .catch(error => alert("Erro ao recarregar Accel-PPP: " + error));
-}
-
-// Função de logout
-function logout() {
-    window.location.href = '/logout';
-}
-
-// Função de upload do arquivo de configuração
+// Função para fazer upload do arquivo de configurações
 function uploadConfig() {
     const fileInput = $('#file-upload')[0];
     const file = fileInput.files[0];
@@ -173,12 +149,36 @@ function uploadConfig() {
             body: formData
         })
         .then(response => response.json())
-        .then(data => {
-            alert(data.message || "Configuração carregada com sucesso!");
-            location.reload(); // Atualiza a página após o upload
-        })
+        .then(data => alert(data.message || "Configuração carregada com sucesso!"))
         .catch(error => alert("Erro ao fazer upload da configuração: " + error));
     } else {
         alert("Por favor, selecione um arquivo.");
     }
+}
+
+// Função de logout
+function logout() {
+    window.location.href = '/logout';
+}
+
+// Função de alternância de tema
+function toggleTheme() {
+    $('body').toggleClass('dark-theme');
+    const themeIcon = $('#theme-icon');
+
+    if ($('body').hasClass('dark-theme')) {
+        themeIcon.removeClass('fa-sun').addClass('fa-moon');
+    } else {
+        themeIcon.removeClass('fa-moon').addClass('fa-sun');
+    }
+}
+
+// Função para executar o comando "accel-cmd reload"
+function reloadConfig() {
+    fetch('/reload-config', {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => alert("Comando Executado:\n\n" + data.log))
+    .catch(error => alert("Erro ao executar o comando: " + error));
 }
