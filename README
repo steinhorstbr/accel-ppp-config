@@ -1,5 +1,7 @@
 git clone https://github.com/steinhorstbr/accel-ppp-config.git
 cd accel-ppp-config
+cp accel-ppp.conf /etc/accel-ppp.conf
+systemctl restart accel-ppp.service
 docker build -t accel-ppp-editor .
 
 
