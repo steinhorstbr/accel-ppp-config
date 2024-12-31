@@ -7,7 +7,7 @@ app.secret_key = 'supersecretkey'
 CONFIG_PATH = '/etc/accel-ppp.conf'
 
 ADMIN_USER = 'admin'
-ADMIN_PASS = 'admin'
+ADMIN_PASS = 'admin1234'
 
 
 def parse_config():
