@@ -9,3 +9,16 @@ docker run -d \
   -v /etc/accel-ppp.conf:/etc/accel-ppp.conf \
   -p 5000:5000 \
   accel-ppp-editor
+_________________
+
+
+
+
+
+sempre iniciar com a maquina 
+
+docker run -d \
+  --restart=always \
+  -v /etc/accel-ppp.conf:/etc/accel-ppp.conf \
+  -p 5000:5000 \
+  accel-ppp-editor
