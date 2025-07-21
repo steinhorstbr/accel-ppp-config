@@ -4,21 +4,15 @@ cp accel-ppp.conf /etc/accel-ppp.conf
 systemctl restart accel-ppp.service
 docker build -t accel-ppp-editor .
 
-
 docker run -d \
-  -v /etc/accel-ppp.conf:/etc/accel-ppp.conf \
-  -p 5000:5000 \
-  accel-ppp-editor
-_________________
-
-
-
-
-
-sempre iniciar com a maquina 
-
-docker run -d \
-  --restart=always \
-  -v /etc/accel-ppp.conf:/etc/accel-ppp.conf \
-  -p 5000:5000 \
-  accel-ppp-editor
+    --name accel-ppp-editor \
+    --restart=always \
+    --privileged \
+    --pid=host \
+    --network=host \
+    -v /etc/accel-ppp.conf:/etc/accel-ppp.conf \
+    -v /proc:/proc \
+    -v /usr/sbin:/usr/sbin:ro \
+    -v /usr/bin:/usr/bin:ro \
+    -v /sbin:/sbin:ro \
+    accel-ppp-editor
